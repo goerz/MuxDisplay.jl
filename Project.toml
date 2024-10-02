@@ -1,0 +1,12 @@
+name = "TmuxPaneDisplay"
+uuid = "afaeafb7-3261-478a-83e7-deab50c7bbde"
+authors = ["Michael Goerz <mail@michaelgoerz.net>"]
+version = "0.1.0-dev"
+
+[deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[compat]
+FileIO = "1.16"
+Printf = "1"
