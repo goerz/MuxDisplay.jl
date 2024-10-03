@@ -4,7 +4,7 @@ using IOCapture: IOCapture
 using Logging
 using Plots
 
-@testset "plots dry run" begin
+@testset "Tmux Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
         withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
@@ -66,6 +66,38 @@ using Plots
             @error "Test failure" line
         end
     end
+
+end
+
+
+@testset "Tmux Plots dummy binary" begin
+
+    c = IOCapture.capture(passthrough = false) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+            MultiplexerPaneDisplay.enable(
+                multiplexer = :tmux,
+                bin = joinpath(@__DIR__, "bin", "tmux.sh"),
+                target_pane = "test:0.0",
+                nrows = 1,
+                imgcat_cmd = joinpath(@__DIR__, "bin", "imgcat.sh") *
+                             " -W {width} -H {height} '{file}'",
+            )
+            fig1 = scatter(rand(100))
+            display(fig1)
+            fig2 = scatter(rand(100))
+            display(fig2)
+            d = Base.Multimedia.displays[end]
+            MultiplexerPaneDisplay.disable()
+            return d
+        end
+    end
+    # The tmux.sh dummy script checks that it receives only expected input.
+    # So running through without an error is a strong test.
+
+    @test c.value isa MultiplexerPaneDisplay.Tmux.TmuxPaneDisplay
+    tmpdir = c.value.tmpdir
+    @test isfile(joinpath(tmpdir, "001.png"))
+    @test isfile(joinpath(tmpdir, "002.png"))
 
 end
 

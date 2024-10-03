@@ -1,11 +1,13 @@
-module Tmux
+module WezTerm
+
+import JSON
 
 import ..AbstractMultiplexerPaneDisplay
 import ..display_files
 import ..send_cmd
 
 
-struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
+struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
     imgcat_cmd::String
@@ -20,27 +22,26 @@ struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     files::Vector{String}  # Absolute paths of generated files
 end
 
-
 const _imgcat_cmd = "wezterm imgcat --height {height} --width {width} '{file}'"
 
 
 # TODO: documentation
-function TmuxPaneDisplay(;
+function WezTermPaneDisplay(;
     target_pane,
     tmpdir = mktempdir(),
     imgcat_cmd = _imgcat_cmd,
-    bin = "tmux",
+    bin = "wezterm",
     nrows = 1,
-    clear = true,
+    clear = false,
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
     echo_filename = true,
-    sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
+    sleep_secs = ((redraw_previous > 0) ? 0.2 : 0.0),
     files = String[],  # internal
 )
-    # TODO: check that target_pane is either "session:window.pane" or "pane"
-    TmuxPaneDisplay(
+    # TODO: check that target_pane is valid
+    WezTermPaneDisplay(
         string(target_pane),
         tmpdir,
         imgcat_cmd,
@@ -57,14 +58,14 @@ function TmuxPaneDisplay(;
 end
 
 
-function Base.summary(io::IO, d::TmuxPaneDisplay)
-    msg = "TmuxPaneDisplay for $(d.nrows) row(s) using $(d.bin) target $(d.target_pane)"
+function Base.summary(io::IO, d::WezTermPaneDisplay)
+    msg = "WezTermPaneDisplay for $(d.nrows) row(s) using $(d.bin) target $(d.target_pane)"
     attribs = String[]
     if !d.echo_filename
         push!(attribs, "echo off")
     end
-    if !d.clear
-        push!(attribs, "do not clear")
+    if d.clear
+        push!(attribs, "clear")
     end
     if d.only_write_files
         push!(attribs, "only write files")
@@ -82,74 +83,65 @@ function Base.summary(io::IO, d::TmuxPaneDisplay)
 end
 
 
-function send_cmd(d::TmuxPaneDisplay, cmd_str::AbstractString)
+function send_cmd(d::WezTermPaneDisplay, cmd_str::AbstractString)
     target_pane = d.target_pane
-    tmux_cmd = d.bin
-    cmd = `$tmux_cmd send-keys -t $target_pane $cmd_str Enter`
+    wezterm_cmd = d.bin
+    cmd = `$wezterm_cmd cli send-text --no-paste --pane-id $target_pane`
     if d.dry_run
-        @debug "$cmd (dry run)"
+        @debug "$cmd (dry run)" stdin = cmd_str
     else
-        @debug "$cmd"
-        run(cmd)
+        @debug "$cmd" stdin = cmd_str
+        open(cmd, "w") do process
+            println(process, cmd_str)
+        end
     end
 end
 
 
-function select_pane(tmux_cmd, pane; dry_run = false)
-    cmd = `$tmux_cmd select-pane -t $pane`
+function get_wezterm_info(wezterm_cmd; dry_run = false)
+    cmd = `$wezterm_cmd cli list --format json`
     if dry_run
         @debug "$cmd (dry run)"
+        return []
     else
-        @debug "$cmd"
-        run(cmd)
+        open(cmd, "r") do process
+            output = read(process, String)
+            data = JSON.parse(output)
+            @debug "$cmd" data
+            return data
+        end
     end
 end
 
 
-function get_current_pane(tmux_cmd; dry_run = false)
-    cmd = `$tmux_cmd display -p '#{pane_index}'`
+function get_pane_dimensions(wezterm_cmd, pane::String; dry_run = false)
+    wezterm_info = get_wezterm_info(wezterm_cmd; dry_run)
     if dry_run
-        pane = "<orig pane>"
-        @debug "$cmd -> current pane $pane (dry run)"
+        @debug "found wezterm pane $pane dimension 80x24 (dry run)"
+        return 80, 24
     else
-        pane = strip(read(cmd, String))
-        @debug "$cmd -> current pane $pane"
+        for pane_info in wezterm_info
+            if string(pane_info["pane_id"]) == pane
+                height = pane_info["size"]["rows"]
+                width = pane_info["size"]["cols"]
+                @debug "found wezterm pane $pane dimension $(width)x$(height)"
+                return width, height
+            end
+        end
+        @error "Cannot find WezTerm pane $pane."
+        return 80, 24
     end
-    return pane
 end
 
 
-function get_pane_dimensions(tmux_cmd, pane; dry_run = false)
-    cmd = `$tmux_cmd display -p -t $pane '#{pane_width}'`
-    if dry_run
-        width = 80
-        @debug "$cmd -> pane width $width (dry run)"
-    else
-        width = parse(Int64, strip(read(cmd, String)))
-        @debug "$cmd -> pane width $width"
-    end
-    cmd = `$tmux_cmd display -p -t $pane '#{pane_height}'`
-    if dry_run
-        height = 24
-        @debug "$cmd -> pane height $height (dry run)"
-    else
-        height = parse(Int64, strip(read(cmd, String)))
-        @debug "$cmd -> pane height $height"
-    end
-    return width, height
-end
-
-
-function display_files(d::TmuxPaneDisplay)
+function display_files(d::WezTermPaneDisplay)
     dry_run = d.dry_run
-    tmux_cmd = d.bin
+    wezterm_cmd = d.bin
     target_pane = d.target_pane
-    current_pane = get_current_pane(tmux_cmd; dry_run)
-    select_pane(tmux_cmd, target_pane; dry_run)
     if d.clear
         send_cmd(d, "clear")
     end
-    width, height = get_pane_dimensions(tmux_cmd, target_pane; dry_run)
+    width, height = get_pane_dimensions(wezterm_cmd, target_pane; dry_run)
     width = width - 2
     height::Int64 = (height ÷ d.nrows) - 2
     if d.echo_filename
@@ -174,7 +166,7 @@ function display_files(d::TmuxPaneDisplay)
             dry_run || sleep(sleep_secs)
         end
     end
-    select_pane(tmux_cmd, current_pane; dry_run)
 end
+
 
 end

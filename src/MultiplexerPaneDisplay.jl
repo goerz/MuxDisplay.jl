@@ -12,6 +12,9 @@ include("terminal.jl")
 # Using tput:
 #  move up (`tput cuu [N]`), move down (`tput cud [N]`), move right (`tput cuf [N]`), move left (`tput cub [N]`).
 
+# TODO: MultiplexerPaneDisplay.display function that allows titles
+
+
 """Enable the MultiplexerPaneDisplay"""
 function enable(; multiplexer = :tmux, verbose = true, kwargs...)
     # TODO: preference file for defaults
@@ -65,6 +68,7 @@ function set_options(; verbose = true, kwargs...)
             @error "MultiplexerPaneDisplay is not active"
         end
     end
+    return nothing
 end
 
 
@@ -90,10 +94,12 @@ end
 
 
 include("tmux.jl")  # submodule Tmux
+include("wezterm.jl")  # submodule WezTerm
 
 using .Tmux: TmuxPaneDisplay
+using .WezTerm: WezTermPaneDisplay
 
-const DISPLAY_TYPES = Dict(:tmux => TmuxPaneDisplay)
+const DISPLAY_TYPES = Dict(:tmux => TmuxPaneDisplay, :wezterm => WezTermPaneDisplay)
 
 
 end
