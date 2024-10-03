@@ -1,1 +1,1 @@
-# TmuxPaneDisplay
+# MultiplexerPaneDisplay

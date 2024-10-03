@@ -2,7 +2,7 @@ using Test
 using SafeTestsets
 
 # Note: comment outer @testset to stop after first @safetestset failure
-@time @testset verbose = true "TmuxPaneDisplay" begin
+@time @testset verbose = true "MultiplexerPaneDisplay" begin
 
     println("\n* Plots Display")
     @time @safetestset "test_plots_display" begin

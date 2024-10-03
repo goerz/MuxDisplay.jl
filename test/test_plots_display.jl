@@ -1,5 +1,5 @@
 using Test
-using TmuxPaneDisplay
+using MultiplexerPaneDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
@@ -7,8 +7,9 @@ using Plots
 @testset "plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => TmuxPaneDisplay) do
-            TmuxPaneDisplay.enable(
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+            MultiplexerPaneDisplay.enable(
+                multiplexer = :tmux,
                 target_pane = "test:0.0",
                 tmpdir = ".",
                 nrows = 1,
@@ -19,9 +20,13 @@ using Plots
             display(fig1)
             fig2 = scatter(rand(100))
             display(fig2)
-            TmuxPaneDisplay.set_options(nrows = 2, echo_filename = false)
+            MultiplexerPaneDisplay.set_options(;
+                nrows = 2,
+                redraw_previous = 1,
+                echo_filename = false
+            )
             display(fig2)
-            TmuxPaneDisplay.disable()
+            MultiplexerPaneDisplay.disable()
         end
     end
     expected_lines = [
@@ -45,7 +50,7 @@ using Plots
         "002.png",
         "`tmux send-keys -t test:0.0 \"echo \\\"002.png\\\"; imgcat -H 21 -W 78 './002.png'\" Enter`",
         # Set options
-        "Info: Activating TmuxPaneDisplay for 2 row(s)",
+        "Info: Updating display to TmuxPaneDisplay for 2 row(s) using tmux target test:0.0 (echo off, redraw previous 1, dry run)",
         # Re-showing fig2
         "Saving image/png representation of Plots.Plot{Plots.GRBackend} object to ./003.png",
         "`tmux send-keys -t test:0.0 \"imgcat -H 10 -W 78 './002.png'\" Enter`",

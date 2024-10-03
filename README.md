@@ -1,13 +1,14 @@
-# TmuxPaneDisplay
+# MultiplexerPaneDisplay
 
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://goerz.github.io/TmuxPaneDisplay.jl/dev/)
-[![Build Status](https://github.com/goerz/TmuxPaneDisplay.jl/workflows/CI/badge.svg)](https://github.com/goerz/TmuxPaneDisplay.jl/actions)
-[![Coverage](https://codecov.io/gh/goerz/TmuxPaneDisplay.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/goerz/TmuxPaneDisplay.jl)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://goerz.github.io/MultiplexerPaneDisplay.jl/dev/)
+[![Build Status](https://github.com/goerz/MultiplexerPaneDisplay.jl/workflows/CI/badge.svg)](https://github.com/goerz/MultiplexerPaneDisplay.jl/actions)
+[![Coverage](https://codecov.io/gh/goerz/MultiplexerPaneDisplay.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/goerz/MultiplexerPaneDisplay.jl)
+
 
 ## Installation
 
 ```
-] add https://github.com/goerz/TmuxPaneDisplay.jl.git
+] add https://github.com/goerz/MultiplexerPaneDisplay.jl.git
 ```
 
 ## Prerequisites
@@ -18,7 +19,7 @@
 ## Usage
 
 ```
-using TmuxPaneDisplay
+using MultiplexerPaneDisplay
 
-TmuxPaneDisplay.enable(target_pane=1)
+MultiplexerPaneDisplay.enable(target_pane=1)
 ```
