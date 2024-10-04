@@ -8,7 +8,7 @@ using Plots
 @testset "WezTerm Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             MultiplexerPaneDisplay.enable(
                 multiplexer = :wezterm,
                 target_pane = "1",
@@ -72,7 +72,7 @@ end
 @testset "WezTerm Plots dummy binary" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             MultiplexerPaneDisplay.enable(
                 multiplexer = :wezterm,
                 bin = joinpath(@__DIR__, "bin", "wezterm.sh"),

@@ -7,7 +7,7 @@ using Plots
 @testset "display with title" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             println("*** Enable")
             MultiplexerPaneDisplay.enable(
                 multiplexer = :tmux,

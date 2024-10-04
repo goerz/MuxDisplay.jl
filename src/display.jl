@@ -35,6 +35,7 @@ end
 
 for (mime, fmt) in zip(MIMES, FORMATS)
     @eval begin
+
         function Base.display(
             d::AbstractMultiplexerPaneDisplay,
             m::MIME{Symbol($mime)},
@@ -49,6 +50,7 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             imgcat = d.imgcat,
             use_filenames_as_title = d.use_filenames_as_title,
         )
+            @debug "Base.display(::$(typeof(d)), ::$(typeof(m)), ::$(typeof(x)))"
             n = length(d.files) + 1
             filename = @sprintf("%03d.", n) * $fmt
             file = joinpath(d.tmpdir, filename)
@@ -60,12 +62,13 @@ for (mime, fmt) in zip(MIMES, FORMATS)
                     save(file, x)
                 end
             catch exc
+                @debug "Failed to display on $(typeof(d))" exception = exc
                 throw(MethodError(Base.display, (d, x)))
                 # fall back to another display
             end
             push!(d.files, file)
             if d.only_write_files
-                if (title == filename)
+                if (title == filename) || (title == "")
                     println("[$file]")
                 else
                     println("[$file: $title]")
@@ -78,7 +81,9 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             end
             return nothing
         end
+
         Base.displayable(::AbstractMultiplexerPaneDisplay, ::MIME{Symbol($mime)}) = true
+
     end
 end
 

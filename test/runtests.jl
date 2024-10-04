@@ -14,12 +14,20 @@ using SafeTestsets
         include("test_wezterm_plots_display.jl")
     end
 
+    println("\n* WezTerm Plots Display")
+    @time @safetestset "test_wezterm_plots_display" begin
+        include("test_wezterm_plots_display.jl")
+    end
+
+    println("\n* Only write files")
+    @time @safetestset "test_wezterm_plots_display" begin
+        include("test_only_write_files.jl")
+    end
+
     println("\n* Manual display")
     @time @safetestset "test_manual_display" begin
         include("test_manual_display.jl")
     end
-
-    # TODO: only write files mode
 
 end
 

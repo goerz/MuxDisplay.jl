@@ -16,10 +16,15 @@ include("terminal.jl")
 
 
 """Enable the MultiplexerPaneDisplay"""
-function enable(; multiplexer = :tmux, verbose = true, kwargs...)
+function enable(;
+    multiplexer = :tmux,
+    display_type = DISPLAY_TYPES[multiplexer],
+    verbose = true,
+    kwargs...
+)
     # TODO: preference file for defaults
     disable(; verbose = false)
-    display = DISPLAY_TYPES[multiplexer](; kwargs...)
+    display = display_type(; kwargs...)
     if verbose
         @info "Activating $(summary(display))" display.tmpdir display.imgcat
     end

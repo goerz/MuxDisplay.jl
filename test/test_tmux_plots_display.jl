@@ -7,7 +7,8 @@ using Plots
 @testset "Tmux Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
+            println("*** Activation")
             MultiplexerPaneDisplay.enable(
                 multiplexer = :tmux,
                 target_pane = "test:0.0",
@@ -16,16 +17,21 @@ using Plots
                 dry_run = true,
                 imgcat = "imgcat -H {height} -W {width} '{file}'"
             )
+            println("*** Figure 1")
             fig1 = scatter(rand(100))
             display(fig1)
+            println("*** Figure 2")
             fig2 = scatter(rand(100))
             display(fig2)
+            println("*** Set options")
             MultiplexerPaneDisplay.set_options(;
                 nrows = 2,
                 redraw_previous = 1,
                 use_filenames_as_title = false
             )
+            println("*** Reshow Figure 2")
             display(fig2)
+            println("** Deactivation")
             MultiplexerPaneDisplay.disable()
         end
     end
@@ -75,7 +81,7 @@ end
 @testset "Tmux Plots dummy binary" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay) do
+        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             MultiplexerPaneDisplay.enable(
                 multiplexer = :tmux,
                 bin = joinpath(@__DIR__, "bin", "tmux.sh"),
