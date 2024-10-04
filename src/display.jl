@@ -5,20 +5,31 @@ const MIMES = ("image/png", "image/jpeg")
 const FORMATS = ("png", "jpg")
 
 
-# Required fields:
-# - tmpdir
-# - files
-# - only_write_files
-# - imgcat_cmd
+# All fields required, see subtyptes
 abstract type AbstractMultiplexerPaneDisplay <: AbstractDisplay end
 
 
-# show pending file(s) in pane
-function display_files end
-
-
 # send a command to the target pane and press Enter
-function send_cmd end
+function send_cmd(d::AbstractMultiplexerPaneDisplay, cmd)
+    throw(MethodError(send_cmd, (d, cmd)))
+end
+
+# get the pane dimensions
+function get_pane_dimensions(d::AbstractMultiplexerPaneDisplay, pane)
+    throw(MethodError(get_pane_dimensions, (d, pane)))
+end
+
+requires_switching(::AbstractMultiplexerPaneDisplay) = false
+
+# get get the current pane for displays that require switching)
+function get_current_pane(d::AbstractMultiplexerPaneDisplay)
+    throw(MethodError(get_current_pane, (d,)))
+end
+
+# switch panes (only for displays the require switching)
+function select_pane(d::AbstractMultiplexerPaneDisplay, pane)
+    throw(MethodError(select_pane, (d, pane)))
+end
 
 
 
@@ -27,7 +38,16 @@ for (mime, fmt) in zip(MIMES, FORMATS)
         function Base.display(
             d::AbstractMultiplexerPaneDisplay,
             m::MIME{Symbol($mime)},
-            @nospecialize(x)
+            @nospecialize(x);
+            # keyword arguments are internal / undocumented, see
+            # `MultiplexerPaneDisplay.display` function for the user-facing
+            # function that supports these explicitly
+            clear = d.clear,
+            title = "",
+            nrows = d.nrows,
+            redraw_previous = d.redraw_previous,
+            imgcat = d.imgcat,
+            use_filenames_as_title = d.use_filenames_as_title,
         )
             n = length(d.files) + 1
             filename = @sprintf("%03d.", n) * $fmt
@@ -40,14 +60,21 @@ for (mime, fmt) in zip(MIMES, FORMATS)
                     save(file, x)
                 end
             catch exc
-                throw(MethodError(display, (d, x)))
+                throw(MethodError(Base.display, (d, x)))
                 # fall back to another display
             end
             push!(d.files, file)
             if d.only_write_files
-                println("[$file]")
+                if (title == filename)
+                    println("[$file]")
+                else
+                    println("[$file: $title]")
+                end
             else
-                display_files(d)
+                if (title == "") && use_filenames_as_title
+                    title = filename
+                end
+                display_files(d; clear, title, nrows, redraw_previous, imgcat)
             end
             return nothing
         end
@@ -62,8 +89,60 @@ Base.displayable(::AbstractMultiplexerPaneDisplay, ::MIME) = false
 function Base.display(d::AbstractMultiplexerPaneDisplay, @nospecialize(x))
     for mime in MIMES
         if showable(mime, x)
-            return display(d, mime, x)
+            return Base.display(d, mime, x)
         end
     end
-    throw(MethodError(display, (d, x)))
+    throw(MethodError(Base.display, (d, x)))
+end
+
+
+# display pending files(s)
+function display_files(
+    d::AbstractMultiplexerPaneDisplay;
+    clear = d.clear,
+    title = "",  # tite for d.files[end]
+    nrows = d.nrows,
+    redraw_previous = d.redraw_previous,
+    imgcat = d.imgcat,
+)
+    dry_run = d.dry_run
+    target_pane = d.target_pane
+    current_pane = nothing
+    if requires_switching(d)
+        current_pane = get_current_pane(d)
+        select_pane(d, target_pane)
+    end
+    if clear
+        send_cmd(d, "clear")
+    end
+    pane_width, pane_height = get_pane_dimensions(d, target_pane)
+    width = pane_width - 2
+    n_show = min(redraw_previous + 1, length(d.files))
+    a = lastindex(d.files) - n_show + 1
+    b = lastindex(d.files)
+    @assert lastindex(d.titles) == (lastindex(d.files) - 1)
+    push!(d.titles, title)
+    for i = a:b
+        file = d.files[i]
+        title = d.titles[i]  # redefine title as title for figure `i`
+        has_title = (length(title) > 0)
+        height::Int64 = (pane_height ÷ nrows) - 2
+        if has_title
+            height = height - (textwidth(title) ÷ pane_width)
+        end
+        cmd_str =
+            replace(imgcat, "{file}" => file, "{width}" => width, "{height}" => height)
+        if has_title
+            cmd_str = Base.shell_escape("echo", title) * "; " * cmd_str
+        end
+        send_cmd(d, cmd_str)
+        sleep_secs = d.sleep_secs
+        if sleep_secs > 0
+            @debug "Sleep for $sleep_secs secs"
+            dry_run || sleep(sleep_secs)
+        end
+    end
+    if requires_switching(d)
+        select_pane(d, current_pane)
+    end
 end

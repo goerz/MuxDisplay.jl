@@ -14,6 +14,13 @@ using SafeTestsets
         include("test_wezterm_plots_display.jl")
     end
 
+    println("\n* Manual display")
+    @time @safetestset "test_manual_display" begin
+        include("test_manual_display.jl")
+    end
+
+    # TODO: only write files mode
+
 end
 
 nothing  # avoid noise when doing `include("test/runtests.jl")`

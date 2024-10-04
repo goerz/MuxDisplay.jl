@@ -1,58 +1,64 @@
 module Tmux
 
 import ..AbstractMultiplexerPaneDisplay
-import ..display_files
 import ..send_cmd
+import ..get_pane_dimensions
+import ..requires_switching
+import ..get_current_pane
+import ..select_pane
 
 
 struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
-    imgcat_cmd::String
-    bin::String
+    imgcat::String
+    bin::String  # TODO: this needs a better name
     nrows::Int64
     redraw_previous::Int64
     dry_run::Bool
     only_write_files::Bool
-    echo_filename::Bool
+    use_filenames_as_title::Bool  # TODO: this needs a better name
     clear::Bool
     sleep_secs::Float64
     files::Vector{String}  # Absolute paths of generated files
+    titles::Vector{String}  # Title for each file
 end
 
 
-const _imgcat_cmd = "wezterm imgcat --height {height} --width {width} '{file}'"
+const _imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
 
 
 # TODO: documentation
 function TmuxPaneDisplay(;
     target_pane,
     tmpdir = mktempdir(),
-    imgcat_cmd = _imgcat_cmd,
+    imgcat = _imgcat,
     bin = "tmux",
     nrows = 1,
     clear = true,
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
-    echo_filename = true,
+    use_filenames_as_title = true,
     sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
     files = String[],  # internal
+    titles = String[],  # internal
 )
     # TODO: check that target_pane is either "session:window.pane" or "pane"
     TmuxPaneDisplay(
         string(target_pane),
         tmpdir,
-        imgcat_cmd,
+        imgcat,
         bin,
         nrows,
         redraw_previous,
         dry_run,
         only_write_files,
-        echo_filename,
+        use_filenames_as_title,
         clear,
         sleep_secs,
-        files
+        files,
+        titles,
     )
 end
 
@@ -60,7 +66,7 @@ end
 function Base.summary(io::IO, d::TmuxPaneDisplay)
     msg = "TmuxPaneDisplay for $(d.nrows) row(s) using $(d.bin) target $(d.target_pane)"
     attribs = String[]
-    if !d.echo_filename
+    if !d.use_filenames_as_title
         push!(attribs, "echo off")
     end
     if !d.clear
@@ -84,8 +90,8 @@ end
 
 function send_cmd(d::TmuxPaneDisplay, cmd_str::AbstractString)
     target_pane = d.target_pane
-    tmux_cmd = d.bin
-    cmd = `$tmux_cmd send-keys -t $target_pane $cmd_str Enter`
+    tmux = d.bin
+    cmd = `$tmux send-keys -t $target_pane $cmd_str Enter`
     if d.dry_run
         @debug "$cmd (dry run)"
     else
@@ -95,9 +101,13 @@ function send_cmd(d::TmuxPaneDisplay, cmd_str::AbstractString)
 end
 
 
-function select_pane(tmux_cmd, pane; dry_run = false)
-    cmd = `$tmux_cmd select-pane -t $pane`
-    if dry_run
+requires_switching(::TmuxPaneDisplay) = true
+
+
+function select_pane(d::TmuxPaneDisplay, pane)
+    tmux = d.bin
+    cmd = `$tmux select-pane -t $pane`
+    if d.dry_run
         @debug "$cmd (dry run)"
     else
         @debug "$cmd"
@@ -106,9 +116,10 @@ function select_pane(tmux_cmd, pane; dry_run = false)
 end
 
 
-function get_current_pane(tmux_cmd; dry_run = false)
-    cmd = `$tmux_cmd display -p '#{pane_index}'`
-    if dry_run
+function get_current_pane(d::TmuxPaneDisplay)
+    tmux = d.bin
+    cmd = `$tmux display -p '#{pane_index}'`
+    if d.dry_run
         pane = "<orig pane>"
         @debug "$cmd -> current pane $pane (dry run)"
     else
@@ -119,17 +130,18 @@ function get_current_pane(tmux_cmd; dry_run = false)
 end
 
 
-function get_pane_dimensions(tmux_cmd, pane; dry_run = false)
-    cmd = `$tmux_cmd display -p -t $pane '#{pane_width}'`
-    if dry_run
+function get_pane_dimensions(d::TmuxPaneDisplay, pane)
+    tmux = d.bin
+    cmd = `$tmux display -p -t $pane '#{pane_width}'`
+    if d.dry_run
         width = 80
         @debug "$cmd -> pane width $width (dry run)"
     else
         width = parse(Int64, strip(read(cmd, String)))
         @debug "$cmd -> pane width $width"
     end
-    cmd = `$tmux_cmd display -p -t $pane '#{pane_height}'`
-    if dry_run
+    cmd = `$tmux display -p -t $pane '#{pane_height}'`
+    if d.dry_run
         height = 24
         @debug "$cmd -> pane height $height (dry run)"
     else
@@ -139,42 +151,5 @@ function get_pane_dimensions(tmux_cmd, pane; dry_run = false)
     return width, height
 end
 
-
-function display_files(d::TmuxPaneDisplay)
-    dry_run = d.dry_run
-    tmux_cmd = d.bin
-    target_pane = d.target_pane
-    current_pane = get_current_pane(tmux_cmd; dry_run)
-    select_pane(tmux_cmd, target_pane; dry_run)
-    if d.clear
-        send_cmd(d, "clear")
-    end
-    width, height = get_pane_dimensions(tmux_cmd, target_pane; dry_run)
-    width = width - 2
-    height::Int64 = (height ÷ d.nrows) - 2
-    if d.echo_filename
-        height = height - 1
-    end
-    n_show = min(d.redraw_previous + 1, length(d.files))
-    files_to_show = d.files[end-(n_show-1):end]
-    for file in files_to_show
-        cmd_str = replace(
-            d.imgcat_cmd,
-            "{file}" => file,
-            "{width}" => width,
-            "{height}" => height
-        )
-        if d.echo_filename
-            cmd_str = "echo \"$(basename(file))\"; " * cmd_str
-        end
-        send_cmd(d, cmd_str)
-        sleep_secs = d.sleep_secs
-        if sleep_secs > 0
-            @debug "Sleep for $sleep_secs secs"
-            dry_run || sleep(sleep_secs)
-        end
-    end
-    select_pane(tmux_cmd, current_pane; dry_run)
-end
 
 end

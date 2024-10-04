@@ -3,11 +3,11 @@ module MultiplexerPaneDisplay
 include("display.jl")
 include("terminal.jl")
 
-# imgcat_cmd = "wezterm imgcat --height {height} '{file}'"
-# imgcat_cmd = "wezterm imgcat --height {height} --width {width} '{file}'"
-# imgcat_cmd = "wezterm imgcat '{file}'"
-# imgcat_cmd = "imgcat -H {height} -W {width} '{file}'; tput cud {height}"
-# imgcat_cmd = "imgcat -H {height} '{file}'; tput cud {height}"
+# imgcat = "wezterm imgcat --height {height} '{file}'"
+# imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
+# imgcat = "wezterm imgcat '{file}'"
+# imgcat = "imgcat -H {height} -W {width} '{file}'; tput cud {height}"
+# imgcat = "imgcat -H {height} '{file}'; tput cud {height}"
 
 # Using tput:
 #  move up (`tput cuu [N]`), move down (`tput cud [N]`), move right (`tput cuf [N]`), move left (`tput cub [N]`).
@@ -21,7 +21,7 @@ function enable(; multiplexer = :tmux, verbose = true, kwargs...)
     disable(; verbose = false)
     display = DISPLAY_TYPES[multiplexer](; kwargs...)
     if verbose
-        @info "Activating $(summary(display))" display.tmpdir display.imgcat_cmd
+        @info "Activating $(summary(display))" display.tmpdir display.imgcat
     end
     initialize_target_pane(display)
     Base.Multimedia.pushdisplay(display)
@@ -34,7 +34,7 @@ function enabled(; verbose = true)
     if length(ds) > 1 && (ds[end] isa AbstractMultiplexerPaneDisplay)
         display = ds[end]
         if verbose
-            @info "Active $(summary(display))" display.tmpdir display.imgcat_cmd
+            @info "Active $(summary(display))" display.tmpdir display.imgcat
         end
         return true
     else
@@ -59,7 +59,7 @@ function set_options(; verbose = true, kwargs...)
         display_kwargs = merge(convert(Dict{Symbol,Any}, display), kwargs)
         display = typeof(display)(; display_kwargs...)
         if verbose
-            @info "Updating display to $(summary(display))" display.tmpdir display.imgcat_cmd
+            @info "Updating display to $(summary(display))" display.tmpdir display.imgcat
         end
         initialize_target_pane(display)
         Base.Multimedia.pushdisplay(display)
@@ -87,6 +87,25 @@ function disable(; verbose = true)
         end
     end
     return nothing
+end
+
+
+# See `Base.display` in `display.jl` for supported `kwargs`
+function display(x; title = "", kwargs...)
+    if enabled(; verbose = false)
+        d = Base.Multimedia.displays[end]
+        for mime in MIMES
+            if showable(mime, x)
+                if title != ""
+                    return Base.display(d, MIME(mime), x; title, kwargs...)
+                else
+                    return Base.display(d, MIME(mime), x; kwargs...)
+                end
+            end
+        end
+    end
+    println(title)
+    Base.display(x)
 end
 
 

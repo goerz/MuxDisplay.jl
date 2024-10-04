@@ -3,57 +3,60 @@ module WezTerm
 import JSON
 
 import ..AbstractMultiplexerPaneDisplay
-import ..display_files
 import ..send_cmd
+import ..get_pane_dimensions
 
 
 struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
-    imgcat_cmd::String
-    bin::String
+    imgcat::String
+    bin::String  # TODO: this needs a better name
     nrows::Int64
     redraw_previous::Int64
     dry_run::Bool
     only_write_files::Bool
-    echo_filename::Bool
+    use_filenames_as_title::Bool
     clear::Bool
     sleep_secs::Float64
     files::Vector{String}  # Absolute paths of generated files
+    titles::Vector{String}  # Title for each file
 end
 
-const _imgcat_cmd = "wezterm imgcat --height {height} --width {width} '{file}'"
+const _imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
 
 
 # TODO: documentation
 function WezTermPaneDisplay(;
     target_pane,
     tmpdir = mktempdir(),
-    imgcat_cmd = _imgcat_cmd,
+    imgcat = _imgcat,
     bin = "wezterm",
     nrows = 1,
     clear = false,
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
-    echo_filename = true,
+    use_filenames_as_title = true,
     sleep_secs = ((redraw_previous > 0) ? 0.2 : 0.0),
     files = String[],  # internal
+    titles = String[],  # internal
 )
     # TODO: check that target_pane is valid
     WezTermPaneDisplay(
         string(target_pane),
         tmpdir,
-        imgcat_cmd,
+        imgcat,
         bin,
         nrows,
         redraw_previous,
         dry_run,
         only_write_files,
-        echo_filename,
+        use_filenames_as_title,
         clear,
         sleep_secs,
-        files
+        files,
+        titles,
     )
 end
 
@@ -61,7 +64,7 @@ end
 function Base.summary(io::IO, d::WezTermPaneDisplay)
     msg = "WezTermPaneDisplay for $(d.nrows) row(s) using $(d.bin) target $(d.target_pane)"
     attribs = String[]
-    if !d.echo_filename
+    if !d.use_filenames_as_title
         push!(attribs, "echo off")
     end
     if d.clear
@@ -85,8 +88,8 @@ end
 
 function send_cmd(d::WezTermPaneDisplay, cmd_str::AbstractString)
     target_pane = d.target_pane
-    wezterm_cmd = d.bin
-    cmd = `$wezterm_cmd cli send-text --no-paste --pane-id $target_pane`
+    wezterm = d.bin
+    cmd = `$wezterm cli send-text --no-paste --pane-id $target_pane`
     if d.dry_run
         @debug "$cmd (dry run)" stdin = cmd_str
     else
@@ -98,8 +101,8 @@ function send_cmd(d::WezTermPaneDisplay, cmd_str::AbstractString)
 end
 
 
-function get_wezterm_info(wezterm_cmd; dry_run = false)
-    cmd = `$wezterm_cmd cli list --format json`
+function get_wezterm_info(wezterm; dry_run = false)
+    cmd = `$wezterm cli list --format json`
     if dry_run
         @debug "$cmd (dry run)"
         return []
@@ -114,14 +117,15 @@ function get_wezterm_info(wezterm_cmd; dry_run = false)
 end
 
 
-function get_pane_dimensions(wezterm_cmd, pane::String; dry_run = false)
-    wezterm_info = get_wezterm_info(wezterm_cmd; dry_run)
-    if dry_run
+function get_pane_dimensions(d::WezTermPaneDisplay, pane)
+    wezterm = d.bin
+    wezterm_info = get_wezterm_info(wezterm; d.dry_run)
+    if d.dry_run
         @debug "found wezterm pane $pane dimension 80x24 (dry run)"
         return 80, 24
     else
         for pane_info in wezterm_info
-            if string(pane_info["pane_id"]) == pane
+            if string(pane_info["pane_id"]) == string(pane)
                 height = pane_info["size"]["rows"]
                 width = pane_info["size"]["cols"]
                 @debug "found wezterm pane $pane dimension $(width)x$(height)"
@@ -130,41 +134,6 @@ function get_pane_dimensions(wezterm_cmd, pane::String; dry_run = false)
         end
         @error "Cannot find WezTerm pane $pane."
         return 80, 24
-    end
-end
-
-
-function display_files(d::WezTermPaneDisplay)
-    dry_run = d.dry_run
-    wezterm_cmd = d.bin
-    target_pane = d.target_pane
-    if d.clear
-        send_cmd(d, "clear")
-    end
-    width, height = get_pane_dimensions(wezterm_cmd, target_pane; dry_run)
-    width = width - 2
-    height::Int64 = (height ÷ d.nrows) - 2
-    if d.echo_filename
-        height = height - 1
-    end
-    n_show = min(d.redraw_previous + 1, length(d.files))
-    files_to_show = d.files[end-(n_show-1):end]
-    for file in files_to_show
-        cmd_str = replace(
-            d.imgcat_cmd,
-            "{file}" => file,
-            "{width}" => width,
-            "{height}" => height
-        )
-        if d.echo_filename
-            cmd_str = "echo \"$(basename(file))\"; " * cmd_str
-        end
-        send_cmd(d, cmd_str)
-        sleep_secs = d.sleep_secs
-        if sleep_secs > 0
-            @debug "Sleep for $sleep_secs secs"
-            dry_run || sleep(sleep_secs)
-        end
     end
 end
 
