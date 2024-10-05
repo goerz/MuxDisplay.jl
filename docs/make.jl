@@ -11,7 +11,13 @@ GITHUB = "https://github.com/goerz/MultiplexerPaneDisplay.jl"
 
 println("Starting makedocs")
 
-PAGES = ["Home" => "index.md",]
+PAGES = [
+    "Home" => "index.md",
+    "Background" => "background.md",
+    "Scenarios" => "scenarios.md",
+    "Howto" => "howto.md",
+    "API" => "api.md",
+]
 
 makedocs(
     authors = AUTHORS,

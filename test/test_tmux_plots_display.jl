@@ -84,7 +84,7 @@ end
         withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             MultiplexerPaneDisplay.enable(
                 multiplexer = :tmux,
-                bin = joinpath(@__DIR__, "bin", "tmux.sh"),
+                mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
                 target_pane = "test:0.0",
                 nrows = 1,
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *

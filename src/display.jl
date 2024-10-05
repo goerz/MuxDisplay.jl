@@ -5,7 +5,7 @@ const MIMES = ("image/png", "image/jpeg")
 const FORMATS = ("png", "jpg")
 
 
-# All fields required, see subtyptes
+# All fields required, see subtyptes (but this is private API)
 abstract type AbstractMultiplexerPaneDisplay <: AbstractDisplay end
 
 

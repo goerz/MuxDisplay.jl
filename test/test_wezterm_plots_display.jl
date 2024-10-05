@@ -75,7 +75,7 @@ end
         withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             MultiplexerPaneDisplay.enable(
                 multiplexer = :wezterm,
-                bin = joinpath(@__DIR__, "bin", "wezterm.sh"),
+                mux_bin = joinpath(@__DIR__, "bin", "wezterm.sh"),
                 target_pane = "1",
                 nrows = 1,
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *

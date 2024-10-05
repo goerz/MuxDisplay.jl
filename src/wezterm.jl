@@ -11,7 +11,7 @@ struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
     imgcat::String
-    bin::String  # TODO: this needs a better name
+    mux_bin::String  # TODO: this needs a better name
     nrows::Int64
     redraw_previous::Int64
     dry_run::Bool
@@ -26,12 +26,11 @@ end
 const _imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
 
 
-# TODO: documentation
 function WezTermPaneDisplay(;
     target_pane,
     tmpdir = mktempdir(),
     imgcat = _imgcat,
-    bin = "wezterm",
+    mux_bin = "wezterm",
     nrows = 1,
     clear = false,
     redraw_previous = (clear ? (nrows - 1) : 0),
@@ -47,7 +46,7 @@ function WezTermPaneDisplay(;
         string(target_pane),
         tmpdir,
         imgcat,
-        bin,
+        mux_bin,
         nrows,
         redraw_previous,
         dry_run,
@@ -62,7 +61,7 @@ end
 
 
 function Base.summary(io::IO, d::WezTermPaneDisplay)
-    msg = "WezTermPaneDisplay for $(d.nrows) row(s) using $(d.bin) target $(d.target_pane)"
+    msg = "WezTermPaneDisplay for $(d.nrows) row(s) using $(d.mux_bin) target $(d.target_pane)"
     attribs = String[]
     if !d.use_filenames_as_title
         push!(attribs, "echo off")
@@ -88,7 +87,7 @@ end
 
 function send_cmd(d::WezTermPaneDisplay, cmd_str::AbstractString)
     target_pane = d.target_pane
-    wezterm = d.bin
+    wezterm = d.mux_bin
     cmd = `$wezterm cli send-text --no-paste --pane-id $target_pane`
     if d.dry_run
         @debug "$cmd (dry run)" stdin = cmd_str
@@ -118,7 +117,7 @@ end
 
 
 function get_pane_dimensions(d::WezTermPaneDisplay, pane)
-    wezterm = d.bin
+    wezterm = d.mux_bin
     wezterm_info = get_wezterm_info(wezterm; d.dry_run)
     if d.dry_run
         @debug "found wezterm pane $pane dimension 80x24 (dry run)"
