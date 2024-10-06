@@ -24,6 +24,11 @@ using SafeTestsets
         include("test_only_write_files.jl")
     end
 
+    println("\n* Imgcat detection")
+    @time @safetestset "test_imgcat_detection" begin
+        include("test_imgcat_detection.jl")
+    end
+
     println("\n* Manual display")
     @time @safetestset "test_manual_display" begin
         include("test_manual_display.jl")

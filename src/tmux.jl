@@ -6,6 +6,8 @@ import ..get_pane_dimensions
 import ..requires_switching
 import ..get_current_pane
 import ..select_pane
+import ..find_imgcat
+import ..needs_clear
 
 
 struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
@@ -25,16 +27,13 @@ struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
 end
 
 
-const _imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
-
-
 function TmuxPaneDisplay(;
     target_pane,
+    imgcat,
     tmpdir = mktempdir(),
-    imgcat = _imgcat,
     mux_bin = "tmux",
     nrows = 1,
-    clear = true,
+    clear = needs_clear(Val(:tmux)),
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
@@ -62,12 +61,12 @@ function TmuxPaneDisplay(;
 end
 
 
+needs_clear(::Val{:tmux}) = true
+
+
 function Base.summary(io::IO, d::TmuxPaneDisplay)
     msg = "TmuxPaneDisplay for $(d.nrows) row(s) using $(d.mux_bin) target $(d.target_pane)"
     attribs = String[]
-    if !d.use_filenames_as_title
-        push!(attribs, "echo off")
-    end
     if !d.clear
         push!(attribs, "do not clear")
     end

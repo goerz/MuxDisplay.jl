@@ -5,13 +5,15 @@ import JSON
 import ..AbstractMultiplexerPaneDisplay
 import ..send_cmd
 import ..get_pane_dimensions
+import ..find_imgcat
+import ..needs_clear
 
 
 struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
     imgcat::String
-    mux_bin::String  # TODO: this needs a better name
+    mux_bin::String
     nrows::Int64
     redraw_previous::Int64
     dry_run::Bool
@@ -23,16 +25,14 @@ struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     titles::Vector{String}  # Title for each file
 end
 
-const _imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
-
 
 function WezTermPaneDisplay(;
     target_pane,
+    imgcat,
     tmpdir = mktempdir(),
-    imgcat = _imgcat,
     mux_bin = "wezterm",
     nrows = 1,
-    clear = false,
+    clear = needs_clear(Val(:wezterm)),
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
@@ -60,12 +60,12 @@ function WezTermPaneDisplay(;
 end
 
 
+needs_clear(::Val{:wezterm}) = false
+
+
 function Base.summary(io::IO, d::WezTermPaneDisplay)
     msg = "WezTermPaneDisplay for $(d.nrows) row(s) using $(d.mux_bin) target $(d.target_pane)"
     attribs = String[]
-    if !d.use_filenames_as_title
-        push!(attribs, "echo off")
-    end
     if d.clear
         push!(attribs, "clear")
     end

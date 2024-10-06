@@ -56,7 +56,7 @@ using Plots
         "002.png",
         "`tmux send-keys -t test:0.0 \"echo 002.png; imgcat -H 22 -W 78 './002.png'\" Enter`",
         # Set options
-        "Info: Updating display to TmuxPaneDisplay for 2 row(s) using tmux target test:0.0 (echo off, redraw previous 1, dry run)",
+        "Info: Updating display to TmuxPaneDisplay for 2 row(s) using tmux target test:0.0 (redraw previous 1, dry run)",
         # Re-showing fig2
         "Saving image/png representation of Plots.Plot{Plots.GRBackend} object to ./003.png",
         "`tmux send-keys -t test:0.0 \"imgcat -H 10 -W 78 './003.png'\" Enter`",

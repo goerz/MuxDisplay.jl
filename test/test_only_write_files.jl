@@ -9,6 +9,7 @@ using MultiplexerPaneDisplay:
 
 
 struct DummyDisplay <: MultiplexerPaneDisplay.AbstractMultiplexerPaneDisplay
+    target_pane::String
     tmpdir::String
     clear::Bool
     nrows::Int64
@@ -23,6 +24,8 @@ end
 
 
 function DummyDisplay(;
+    target_pane = "",
+    imgcat = "",
     tmpdir = mktempdir(),
     dry_run = false,
     only_write_files = true,
@@ -30,7 +33,19 @@ function DummyDisplay(;
     titles = String[],
     kwargs...
 )
-    DummyDisplay(tmpdir, false, 1, 0, "", dry_run, false, only_write_files, files, titles)
+    DummyDisplay(
+        target_pane,
+        tmpdir,
+        false,
+        1,
+        0,
+        imgcat,
+        dry_run,
+        false,
+        only_write_files,
+        files,
+        titles
+    )
 end
 
 function initialize_target_pane(::DummyDisplay) end
@@ -41,7 +56,11 @@ function restore_target_pane(::DummyDisplay) end
 @testset "Dummy Display interface" begin
 
     c = IOCapture.capture(passthrough = false) do
-        MultiplexerPaneDisplay.enable(; display_type = DummyDisplay)
+        MultiplexerPaneDisplay.enable(;
+            imgcat = "imgcat",
+            target_pane = "",
+            _display_type = DummyDisplay
+        )
         MultiplexerPaneDisplay.enabled(; verbose = true)
         MultiplexerPaneDisplay.disable(; verbose = true)
         MultiplexerPaneDisplay.enabled(; verbose = true)
@@ -50,7 +69,12 @@ function restore_target_pane(::DummyDisplay) end
     @test contains(c.output, "Info: Active")
     @test contains(c.output, "Info: Deactivating")
 
-    MultiplexerPaneDisplay.enable(; display_type = DummyDisplay, verbose = false)
+    MultiplexerPaneDisplay.enable(;
+        imgcat = "imgcat",
+        target_pane = "",
+        _display_type = DummyDisplay,
+        verbose = false
+    )
     @test MultiplexerPaneDisplay.enabled(; verbose = false)
     d = Base.Multimedia.displays[end]
     @test_throws MethodError send_cmd(d, "clear")
@@ -71,7 +95,12 @@ end
     c = IOCapture.capture(passthrough = false) do
         withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
             println("*** Activation")
-            MultiplexerPaneDisplay.enable(display_type = DummyDisplay, tmpdir = tmpdir,)
+            MultiplexerPaneDisplay.enable(;
+                imgcat = "imgcat",
+                target_pane = "",
+                _display_type = DummyDisplay,
+                tmpdir = tmpdir,
+            )
             @assert MultiplexerPaneDisplay.enabled()
             println("*** Figure 1")
             fig1 = scatter(rand(100))

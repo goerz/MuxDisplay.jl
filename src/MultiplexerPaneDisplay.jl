@@ -2,15 +2,7 @@ module MultiplexerPaneDisplay
 
 include("display.jl")
 include("terminal.jl")
-
-# imgcat = "wezterm imgcat --height {height} '{file}'"
-# imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
-# imgcat = "wezterm imgcat '{file}'"
-# imgcat = "imgcat -H {height} -W {width} '{file}'; tput cud {height}"
-# imgcat = "imgcat -H {height} '{file}'; tput cud {height}"
-
-# Using tput:
-#  move up (`tput cuu [N]`), move down (`tput cud [N]`), move right (`tput cuf [N]`), move left (`tput cub [N]`).
+include("imgcat.jl")
 
 
 """Enable display via `MultiplexerPaneDisplay`
@@ -21,11 +13,11 @@ MultiplexerPaneDisplay.enable(;
     target_pane,  # mandatory keyword argument
     verbose = true,
     tmpdir = mktempdir(),
-    imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
     mux_bin = <"tmux" | "wezterm">
     nrows = 1,
-    clear = ((multiplexer == :tmux) ? true : false),
+    clear = MultiplexerPaneDisplay.needs_clear(Val(multiplexer)),
     redraw_previous = (clear ? (nrows - 1) : 0),
+    imgcat = "",
     dry_run = false,
     only_write_files = false,
     use_filenames_as_title = true,
@@ -67,9 +59,14 @@ file in the terminal.
   and {`width}` will be the number of rows/columns in the terminal reserved for
   drawing the image. These are determined internally based on the size of the
   pane, the value of `nrows`, and other factors. The `{file}` is the absolute
-  path to the temporary image file.
+  path to the temporary image file. If given as an empty string (default),
+  `MultiplexerPaneDisplay` will attempt to find an available executable and
+  choose parameters based on heuristics. It will attempt to use either the
+  `wezterm imgcat` command or iTerm's `imgcat` script.
 * `nrows`: The number of image rows that should fit into the pane.
-* `clear`: Whether to issue a `clear` command to the target pane before display.
+* `clear`: Whether to issue a `clear` command to the target pane before
+  display. By default, this is chosen based on the multiplexer (`true` for
+  `:tmux`, `false` for `:wezterm`)
 * `redraw_previous`: If set to an integer > 1, for each call to `display`,
   first redraw the given number of previous images. This accounts for the lack
   of scrollback in tmux, allowing to compare the current image with previous
@@ -96,14 +93,21 @@ file in the terminal.
    image. Typical values are on the order of 0.2-0.5 seconds.
 """
 function enable(;
+    target_pane,
     multiplexer = :tmux,
-    display_type = DISPLAY_TYPES[multiplexer],  # undocumented
+    nrows = 1,
+    clear = needs_clear(Val(multiplexer)),
+    redraw_previous = (clear ? (nrows - 1) : 0),
+    imgcat = "",
     verbose = true,
+    _display_type = DISPLAY_TYPES[multiplexer],  # internal (for testing)
     kwargs...
 )
-    # TODO: preference file for defaults
     disable(; verbose = false)
-    display = display_type(; kwargs...)
+    if imgcat == ""
+        imgcat = find_imgcat(multiplexer, target_pane, nrows, clear, redraw_previous)
+    end
+    display = _display_type(; target_pane, imgcat, nrows, clear, redraw_previous, kwargs...)
     if verbose
         @info "Activating $(summary(display))" display.tmpdir display.imgcat
     end
@@ -213,7 +217,7 @@ MultiplexerPaneDisplay.display(x; title="", kwargs...)
 shows `x` (which must have a `image/png` or `image/jpeg` representation) on the
 current display, after printing the given `title` (in lieu of the filename if
 the display was set up with `use_filenames_as_title = true`). Additional
-keyword arguments can be `clear`, `nrows`, `redraw_pervious`, `imgcat`, and
+keyword arguments can be `clear`, `nrows`, `redraw_previous`, `imgcat`, and
 `use_filenames_as_title`, and temporarily override the corresponding options in
 the display.
 
@@ -240,6 +244,7 @@ end
 
 # TODO: restore target pane at Julia exit?
 
+needs_clear(::Val) = true
 
 include("tmux.jl")  # submodule Tmux
 include("wezterm.jl")  # submodule WezTerm
