@@ -15,6 +15,7 @@ using Plots
                 tmpdir = ".",
                 nrows = 1,
                 dry_run = true,
+                use_filenames_as_title = true,
                 clear = true,
                 redraw_previous = true,
                 imgcat = "imgcat -H {height} -W {width} '{file}'"

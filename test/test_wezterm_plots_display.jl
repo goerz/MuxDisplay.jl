@@ -15,6 +15,7 @@ using Plots
                 tmpdir = ".",
                 nrows = 1,
                 dry_run = true,
+                use_filenames_as_title = true,
                 imgcat = "imgcat -H {height} -W {width} '{file}'"
             )
             fig1 = scatter(rand(100))
@@ -24,7 +25,7 @@ using Plots
             MultiplexerPaneDisplay.set_options(;
                 nrows = 2,
                 redraw_previous = 1,
-                use_filenames_as_title = false
+                use_filenames_as_title = false,
             )
             display(fig2)
             MultiplexerPaneDisplay.disable()
@@ -78,6 +79,7 @@ end
                 mux_bin = joinpath(@__DIR__, "bin", "wezterm.sh"),
                 target_pane = "1",
                 nrows = 1,
+                use_filenames_as_title = true,
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
                          " -W {width} -H {height} '{file}'",
             )

@@ -37,7 +37,7 @@ function TmuxPaneDisplay(;
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
-    use_filenames_as_title = true,
+    use_filenames_as_title = false,
     sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
     files = String[],  # internal
     titles = String[],  # internal

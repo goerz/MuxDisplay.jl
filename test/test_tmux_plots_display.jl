@@ -15,6 +15,7 @@ using Plots
                 tmpdir = ".",
                 nrows = 1,
                 dry_run = true,
+                use_filenames_as_title = true,
                 imgcat = "imgcat -H {height} -W {width} '{file}'"
             )
             println("*** Figure 1")
@@ -87,6 +88,7 @@ end
                 mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
                 target_pane = "test:0.0",
                 nrows = 1,
+                use_filenames_as_title = true,
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
                          " -W {width} -H {height} '{file}'",
             )

@@ -36,7 +36,7 @@ function WezTermPaneDisplay(;
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
-    use_filenames_as_title = true,
+    use_filenames_as_title = false,
     sleep_secs = ((redraw_previous > 0) ? 0.2 : 0.0),
     files = String[],  # internal
     titles = String[],  # internal

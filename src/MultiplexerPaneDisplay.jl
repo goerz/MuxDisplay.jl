@@ -20,7 +20,7 @@ MultiplexerPaneDisplay.enable(;
     imgcat = "",
     dry_run = false,
     only_write_files = false,
-    use_filenames_as_title = true,
+    use_filenames_as_title = false,
     sleep_secs = <automatic>,
 )
 ```
