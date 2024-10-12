@@ -8,27 +8,21 @@
 #  move up (`tput cuu [N]`), move down (`tput cud [N]`), move right (`tput cuf [N]`), move left (`tput cub [N]`).
 
 
-function find_imgcat(multiplexer, target_pane, nrows, clear, redraw_previous)
+function find_imgcat(multiplexer, target_pane, nrows, clear, redraw_previous, smart_size)
     wezterm = Sys.which("wezterm")
     imgcat = Sys.which("imgcat")
     tput = Sys.which("tput")
     result = ""
     if wezterm ≢ nothing
-        if nrows > 1
+        if !smart_size && (nrows > 1)
             result = "wezterm imgcat --height {height} '{file}'"
         else
-            # TODO: The --height actually has no effect if --width is given
-            # In he long run, we'll have to be smarter about this, but that
-            # probably implies supporting "auto", and sending "auto" depending
-            # on how the pixel dimensions of the image compare to the pixel
-            # dimension of the terminal (based on cell_dimensions)
             result = "wezterm imgcat --height {height} --width {width} '{file}'"
         end
     elseif imgcat ≢ nothing
-        if nrows > 1
+        if !smart_size && (nrows > 1)
             result = "imgcat -H {height} '{file}'"
         else
-            # TODO: The -W has no effect, see above
             result = "imgcat -H {height} -W {width} '{file}'"
         end
         if (multiplexer == :tmux) && (tput ≢ nothing)

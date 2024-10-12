@@ -10,6 +10,10 @@ Increase the value of `sleep_secs`.
 
 ## Images overflow the size of the pane
 
+Shouldn't happen with `smart_size=true`. Check that `cell_size` is accurate and set it manually, if necessary.
+
+The problem is that the iTerm-protocol-`imgcat` ignores "height" if "width" is given.
+
 Set an `imgcat_cmd` that uses *only* the height or width
 
 ## Tmux does not have scrollback for images

@@ -17,7 +17,7 @@ end
 @testset "No imgcat" begin
     c = IOCapture.capture(passthrough = false, rethrow = Union{}) do
         withenv("PATH" => "") do
-            imgcat = find_imgcat(:tmux, "0", 24, true, false)
+            imgcat = find_imgcat(:tmux, "0", 24, true, false, false)
         end
     end
     @test contains(c.output, "Could not determine an `imgcat` program")
@@ -33,10 +33,14 @@ end
     write_binary(path_dir, "imgcat")
     write_binary(path_dir, "tput")
 
+    clear = true
+    redraw_previous = false
+    smart_size = false
+
     nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, true, false)
+            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
@@ -46,7 +50,7 @@ end
     nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, true, false)
+            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "wezterm imgcat --height {height} '{file}'"
@@ -62,10 +66,14 @@ end
     write_binary(path_dir, "imgcat")
     write_binary(path_dir, "tput")
 
+    clear = true
+    redraw_previous = false
+    smart_size = false
+
     nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, true, false)
+            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "imgcat -H {height} -W {width} '{file}'; tput cud {height}"
@@ -75,7 +83,7 @@ end
     nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, true, false)
+            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "imgcat -H {height} '{file}'; tput cud {height}"
@@ -86,7 +94,7 @@ end
     nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:wezterm, "0", nrows, true, false)
+            imgcat = find_imgcat(:wezterm, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "imgcat -H {height} -W {width} '{file}'"
@@ -96,7 +104,7 @@ end
     nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:wezterm, "0", nrows, true, false)
+            imgcat = find_imgcat(:wezterm, "0", nrows, clear, redraw_previous, smart_size)
         end
     end
     imgcat = "imgcat -H {height} '{file}'"

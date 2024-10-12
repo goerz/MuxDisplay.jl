@@ -43,6 +43,12 @@ elif [ "$1" == "cli" ] && [ "$2" == "send-text" ] && [ "$3" == "--no-paste" ] &&
         exit 0
     elif [[ "$input" == *"imgcat.sh"* ]]; then
         exit 0
+    elif [[ "$input" == *"read -rs -d t -p"* ]]; then
+        exit 0
+    elif [[ "$input" == "echo \${CELL_SIZE[1]}x\${CELL_SIZE[2]} >"* ]]; then
+        # The test caller should either write a valid "cellsize" file to test
+        # proper processing. Or else, the missing file should trigger a failure
+        exit 0
     else
         echo "$input" >> wezterm_unrecognized_input.log
         exit 1

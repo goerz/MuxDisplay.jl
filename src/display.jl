@@ -110,6 +110,8 @@ function display_files(
     redraw_previous = d.redraw_previous,
     imgcat = d.imgcat,
 )
+    smart_size = true  # TODO: option
+    cell_height, cell_width = d.cell_size
     dry_run = d.dry_run
     target_pane = d.target_pane
     current_pane = nothing
@@ -135,8 +137,29 @@ function display_files(
         if has_title
             height = height - (textwidth(title) ÷ pane_width)
         end
-        cmd_str =
-            replace(imgcat, "{file}" => file, "{width}" => width, "{height}" => height)
+        width_str = string(width)
+        height_str = string(height)
+        if smart_size && !d.dry_run
+            if (cell_width > 0) && (cell_height > 0)
+                image_pixel_width, image_pixel_height = get_image_dimensions(file)
+                area_pixel_width = width * cell_width
+                scale = area_pixel_width / image_pixel_width
+                projected_height = ceil(Int64, (scale * image_pixel_height) / cell_height)
+                @debug "Applying smart size" area_pixel_width scale projected_height height
+                if projected_height > height
+                    @debug "Using `width=\"auto\"` because projected_height  > height"
+                    width_str = "auto"
+                end
+            else
+                @debug "Skip smart_size for unknown cell size = $(d.cell_size)"
+            end
+        end
+        cmd_str = replace(
+            imgcat,
+            "{file}" => file,
+            "{width}" => width_str,
+            "{height}" => height_str
+        )
         if has_title
             cmd_str = Base.shell_escape("echo", title) * "; " * cmd_str
         end

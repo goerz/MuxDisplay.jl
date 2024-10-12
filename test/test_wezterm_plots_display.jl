@@ -72,11 +72,14 @@ end
 
 @testset "WezTerm Plots dummy binary" begin
 
+    tmpdir = mktempdir()
+    write(joinpath(tmpdir, "cellsize"), "20x10")
     c = IOCapture.capture(passthrough = false) do
         withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(
+            MultiplexerPaneDisplay.enable(;
                 multiplexer = :wezterm,
                 mux_bin = joinpath(@__DIR__, "bin", "wezterm.sh"),
+                tmpdir,
                 target_pane = "1",
                 nrows = 1,
                 use_filenames_as_title = true,
@@ -94,6 +97,7 @@ end
     end
     # The wezterm.sh dummy script checks that it receives only expected input.
     # So running through without an error is a strong test.
+    @test contains(c.output, "Set display cell_size = (20, 10)")
 
     @test c.value isa MultiplexerPaneDisplay.WezTerm.WezTermPaneDisplay
     tmpdir = c.value.tmpdir

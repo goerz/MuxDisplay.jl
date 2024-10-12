@@ -5,17 +5,45 @@ const INITIALIZE = Dict{String,Vector{String}}("bash" => ["PS1=''", "stty -echo"
 
 const RESTORE = Dict{String,Vector{String}}("bash" => ["PS1='> '", "stty echo", "clear"],)
 
-function initialize_target_pane(display)
-    # TODO: determine the cell dimensions (pixel width and height of one cell)
-    # With that, every time we want to plot an image, we can get the pixel
-    # dimensions of the available area, and choose more appropriate `height` or
-    # `width` parameters for `imgcat` (if we pass a number for `--width`, the
-    # `-height` is ignored!)
+
+function initialize_target_pane!(display)
     # TODO: Save the environment, so we can restore PS1 on exit. Run
     # `printenv`, parse the output, and store it as en `env` dict in the
     # display.
     for cmd in INITIALIZE["bash"]
         send_cmd(display, cmd)
+    end
+    if display.cell_size == (0, 0)
+        set_cell_size!(display)
+    end
+end
+
+
+function set_cell_size!(display)
+    try
+        cmd = raw"IFS=';' read -rs -d t -p $'\e[16t' -a CELL_SIZE"
+        send_cmd(display, cmd)
+        cellsize_file = joinpath(display.tmpdir, "cellsize")
+        cmd = "echo \${CELL_SIZE[1]}x\${CELL_SIZE[2]} > $cellsize_file"
+        send_cmd(display, cmd)
+        h, w = display.cell_size
+        if display.dry_run
+            @debug "Set display cell_size = ($h, $w) (dry run)"
+        else
+            for attempt = 1:10
+                # The "echo" command is asynchronous, so we may have to wait
+                # for the output file to actually exist
+                if !isfile(cellsize_file)
+                    sleep(attempt * display.cell_size_timeout)
+                end
+            end
+            # If `cellsize_file` still doesn't exist, we'll throw an exception
+            h, w = parse.(Int64, split(read(cellsize_file, String), "x"))
+            @debug "Set display cell_size = ($h, $w)"
+        end
+        display.cell_size = (h, w)
+    catch exception
+        @warn "Cannot determine terminal cell size" exception display.cell_size
     end
 end
 

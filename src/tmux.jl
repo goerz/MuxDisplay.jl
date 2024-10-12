@@ -6,11 +6,10 @@ import ..get_pane_dimensions
 import ..requires_switching
 import ..get_current_pane
 import ..select_pane
-import ..find_imgcat
 import ..needs_clear
 
 
-struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
+mutable struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
     imgcat::String
@@ -21,7 +20,10 @@ struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     only_write_files::Bool
     use_filenames_as_title::Bool
     clear::Bool
+    smart_size::Bool
     sleep_secs::Float64
+    cell_size::Tuple{Int64,Int64}
+    cell_size_timeout::Float64
     files::Vector{String}  # Absolute paths of generated files
     titles::Vector{String}  # Title for each file
 end
@@ -30,15 +32,18 @@ end
 function TmuxPaneDisplay(;
     target_pane,
     imgcat,
-    tmpdir = mktempdir(),
+    tmpdir,
     mux_bin = "tmux",
     nrows = 1,
     clear = needs_clear(Val(:tmux)),
+    smart_size = true,
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
     use_filenames_as_title = false,
     sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
+    cell_size = (0, 0),
+    cell_size_timeout = 0.1,
     files = String[],  # internal
     titles = String[],  # internal
 )
@@ -54,7 +59,10 @@ function TmuxPaneDisplay(;
         only_write_files,
         use_filenames_as_title,
         clear,
+        smart_size,
         sleep_secs,
+        cell_size,
+        cell_size_timeout,
         files,
         titles,
     )

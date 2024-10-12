@@ -3,12 +3,12 @@ using MultiplexerPaneDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
-import MultiplexerPaneDisplay: initialize_target_pane, restore_target_pane
+import MultiplexerPaneDisplay: initialize_target_pane!, restore_target_pane
 using MultiplexerPaneDisplay:
     send_cmd, get_pane_dimensions, requires_switching, get_current_pane, select_pane
 
 
-struct DummyDisplay <: MultiplexerPaneDisplay.AbstractMultiplexerPaneDisplay
+mutable struct DummyDisplay <: MultiplexerPaneDisplay.AbstractMultiplexerPaneDisplay
     target_pane::String
     tmpdir::String
     clear::Bool
@@ -48,7 +48,7 @@ function DummyDisplay(;
     )
 end
 
-function initialize_target_pane(::DummyDisplay) end
+function initialize_target_pane!(::DummyDisplay) end
 
 function restore_target_pane(::DummyDisplay) end
 
@@ -59,7 +59,8 @@ function restore_target_pane(::DummyDisplay) end
         MultiplexerPaneDisplay.enable(;
             imgcat = "imgcat",
             target_pane = "",
-            _display_type = DummyDisplay
+            _display_type = DummyDisplay,
+            only_write_files = true,
         )
         MultiplexerPaneDisplay.enabled(; verbose = true)
         MultiplexerPaneDisplay.disable(; verbose = true)
@@ -73,6 +74,7 @@ function restore_target_pane(::DummyDisplay) end
         imgcat = "imgcat",
         target_pane = "",
         _display_type = DummyDisplay,
+        only_write_files = true,
         verbose = false
     )
     @test MultiplexerPaneDisplay.enabled(; verbose = false)
@@ -99,6 +101,7 @@ end
                 imgcat = "imgcat",
                 target_pane = "",
                 _display_type = DummyDisplay,
+                only_write_files = true,
                 tmpdir = tmpdir,
             )
             @assert MultiplexerPaneDisplay.enabled()

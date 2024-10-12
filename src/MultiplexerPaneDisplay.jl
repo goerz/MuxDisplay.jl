@@ -1,8 +1,9 @@
 module MultiplexerPaneDisplay
 
 include("display.jl")
-include("terminal.jl")
+include("terminal.jl")  # TODO: should be shells.jl
 include("imgcat.jl")
+include("images.jl")
 
 
 """Enable display via `MultiplexerPaneDisplay`
@@ -22,6 +23,7 @@ MultiplexerPaneDisplay.enable(;
     only_write_files = false,
     use_filenames_as_title = false,
     sleep_secs = <automatic>,
+    cell_size = (0, 0),
 )
 ```
 
@@ -49,7 +51,7 @@ file in the terminal.
   `:tmux`, and `"wezterm"` if `multiplexer` is `:wezterm`. This can be set to an absolute path if the executable is not in the shell's `PATH`.
 * `verbose`: If `true`, show information about the display that is being
   activated.
-* `tempdir`: The directory to which to write the temporary files for each
+* `tmpdir`: The directory to which to write the temporary files for each
   invocation of `display`. The files will be consecutively numbered, e.g.,
   `001.png`, `002.png`, etc. The default `mktempdir()` results in a directory
   that is automatically deleted on exit. Passing an existing directory will
@@ -58,7 +60,8 @@ file in the terminal.
   contain the placeholders `{height}`, `{width}`, and `{file}` The `{height}`
   and {`width}` will be the number of rows/columns in the terminal reserved for
   drawing the image. These are determined internally based on the size of the
-  pane, the value of `nrows`, and other factors. The `{file}` is the absolute
+  pane, the value of `nrows`, and other factors. If `smart_size=true`, the
+  value "auto" must be acceptable for `{width}`. The `{file}` is the absolute
   path to the temporary image file. If given as an empty string (default),
   `MultiplexerPaneDisplay` will attempt to find an available executable and
   choose parameters based on heuristics. It will attempt to use either the
@@ -67,6 +70,10 @@ file in the terminal.
 * `clear`: Whether to issue a `clear` command to the target pane before
   display. By default, this is chosen based on the multiplexer (`true` for
   `:tmux`, `false` for `:wezterm`)
+* `smart_size`: If `true`, the `{width}` placeholder in `imgcat` may be
+  replaced with `"auto"` if the image is determined to require a strict height
+  constraint. This depends on automatically detecting the image pixel size
+  and an accurate `cell_size`.
 * `redraw_previous`: If set to an integer > 1, for each call to `display`,
   first redraw the given number of previous images. This accounts for the lack
   of scrollback in tmux, allowing to compare the current image with previous
@@ -91,27 +98,56 @@ file in the terminal.
   `redraw_previous` to draw multiple images, there may need be be a delay for
    on image to finish rendering before issuing the command to draw the next
    image. Typical values are on the order of 0.2-0.5 seconds.
+* `cell_size`: A tuple of for the height and width in pixels of a single
+  cell (character) in the terminal. If given as the default `(0, 0)`, this
+  will be automatically determined by sending the "16t" xterm control sequence
+  to the terminal. This could also be determined manually be dividing the pixel
+  size of the terminal window by its size (columns, rows). Only the ratio of
+  height to width matters here, and for many monospaced fonts, this is roughly
+  2:1. The `cell_size` is used for the `smart_size` option.
 """
 function enable(;
     target_pane,
     multiplexer = :tmux,
     nrows = 1,
     clear = needs_clear(Val(multiplexer)),
+    smart_size = true,
     redraw_previous = (clear ? (nrows - 1) : 0),
+    tmpdir = mktempdir(),
     imgcat = "",
+    cell_size = (0, 0),
+    cell_size_timeout = 0.1,  # private / undocumented
+    only_write_files = false,
     verbose = true,
     _display_type = DISPLAY_TYPES[multiplexer],  # internal (for testing)
     kwargs...
 )
+    # TODO: `scale` option that scales that image using ImageMagick before
+    # showing it.
     disable(; verbose = false)
     if imgcat == ""
-        imgcat = find_imgcat(multiplexer, target_pane, nrows, clear, redraw_previous)
+        imgcat =
+            find_imgcat(multiplexer, target_pane, nrows, clear, redraw_previous, smart_size)
     end
-    display = _display_type(; target_pane, imgcat, nrows, clear, redraw_previous, kwargs...)
+    display = _display_type(;
+        target_pane,
+        tmpdir,
+        imgcat,
+        nrows,
+        clear,
+        smart_size,
+        redraw_previous,
+        only_write_files,
+        cell_size,
+        cell_size_timeout,
+        kwargs...
+    )
     if verbose
         @info "Activating $(summary(display))" display.tmpdir display.imgcat
     end
-    initialize_target_pane(display)
+    if !display.only_write_files
+        initialize_target_pane!(display)
+    end
     Base.Multimedia.pushdisplay(display)
     return nothing
 end
@@ -164,12 +200,15 @@ function set_options(; verbose = true, kwargs...)
     if enabled(; verbose = false)
         display = Base.Multimedia.displays[end]
         disable(verbose = false)
-        display_kwargs = merge(convert(Dict{Symbol,Any}, display), kwargs)
-        display = typeof(display)(; display_kwargs...)
+        for (key, value) in kwargs
+            setfield!(display, key, value)
+        end
         if verbose
             @info "Updating display to $(summary(display))" display.tmpdir display.imgcat
         end
-        initialize_target_pane(display)
+        if !display.only_write_files
+            initialize_target_pane!(display)
+        end
         Base.Multimedia.pushdisplay(display)
     else
         if verbose
