@@ -23,8 +23,8 @@ mutable struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
     sleep_secs::Float64
     cell_size::Tuple{Int64,Int64}
     cell_size_timeout::Float64
-    files::Vector{String}  # Absolute paths of generated files
-    titles::Vector{String}  # Title for each file
+    files::Vector{Tuple{String,String,Tuple{Int64,Int64}}}
+    # (absolute file name, title, (width, height))
 end
 
 
@@ -43,8 +43,7 @@ function WezTermPaneDisplay(;
     sleep_secs = ((redraw_previous > 0) ? 0.2 : 0.0),
     cell_size = (0, 0),
     cell_size_timeout = 0.1,
-    files = String[],  # internal
-    titles = String[],  # internal
+    files = [],  # internal
 )
     # TODO: check that target_pane is valid
     WezTermPaneDisplay(
@@ -63,7 +62,6 @@ function WezTermPaneDisplay(;
         cell_size,
         cell_size_timeout,
         files,
-        titles,
     )
 end
 

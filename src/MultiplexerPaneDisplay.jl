@@ -3,7 +3,6 @@ module MultiplexerPaneDisplay
 include("display.jl")
 include("terminal.jl")  # TODO: should be shells.jl
 include("imgcat.jl")
-include("images.jl")
 
 
 """Enable display via `MultiplexerPaneDisplay`
@@ -175,14 +174,6 @@ function enabled(; verbose = true)
     else
         return false
     end
-end
-
-
-function Base.convert(
-    ::Type{Dict{Symbol,Any}},
-    display::T
-) where {T<:AbstractMultiplexerPaneDisplay}
-    return Dict{Symbol,Any}(name => getfield(display, name) for name in fieldnames(T))
 end
 
 

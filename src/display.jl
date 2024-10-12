@@ -1,5 +1,5 @@
 using Printf: @sprintf
-using FileIO: save
+using FileIO: load, save, Stream, DataFormat
 
 const MIMES = ("image/png", "image/jpeg")
 const FORMATS = ("png", "jpg")
@@ -54,19 +54,27 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             n = length(d.files) + 1
             filename = @sprintf("%03d.", n) * $fmt
             file = joinpath(d.tmpdir, filename)
+            buff = IOBuffer()
+            show(buff, m, x)
+            seekstart(buff)
+            img = load(Stream{DataFormat{Symbol($(uppercase(fmt)))}}(buff))
+            # TODO: allow to process img (e.g., scaling)
             try
                 if d.dry_run
                     @debug "Saving $m representation of $(typeof(x)) object to $file (dry run)"
                 else
                     @debug "Saving $m representation of $(typeof(x)) object to $file"
-                    save(file, x)
+                    save(file, img)
                 end
             catch exc
                 @debug "Failed to display on $(typeof(d))" exception = exc
                 throw(MethodError(Base.display, (d, x)))
                 # fall back to another display
             end
-            push!(d.files, file)
+            if (title == "") && use_filenames_as_title
+                title = filename
+            end
+            push!(d.files, (file, title, size(img)))
             if d.only_write_files
                 if (title == filename) || (title == "")
                     println("[$file]")
@@ -74,10 +82,7 @@ for (mime, fmt) in zip(MIMES, FORMATS)
                     println("[$file: $title]")
                 end
             else
-                if (title == "") && use_filenames_as_title
-                    title = filename
-                end
-                display_files(d; clear, title, nrows, redraw_previous, imgcat)
+                display_files(d; clear, nrows, redraw_previous, imgcat)
             end
             return nothing
         end
@@ -105,12 +110,10 @@ end
 function display_files(
     d::AbstractMultiplexerPaneDisplay;
     clear = d.clear,
-    title = "",  # tite for d.files[end]
     nrows = d.nrows,
     redraw_previous = d.redraw_previous,
     imgcat = d.imgcat,
 )
-    smart_size = true  # TODO: option
     cell_height, cell_width = d.cell_size
     dry_run = d.dry_run
     target_pane = d.target_pane
@@ -127,11 +130,8 @@ function display_files(
     n_show = min(redraw_previous + 1, length(d.files))
     a = lastindex(d.files) - n_show + 1
     b = lastindex(d.files)
-    @assert lastindex(d.titles) == (lastindex(d.files) - 1)
-    push!(d.titles, title)
     for i = a:b
-        file = d.files[i]
-        title = d.titles[i]  # redefine title as title for figure `i`
+        file, title, (image_pixel_width, image_pixel_height) = d.files[i]
         has_title = (length(title) > 0)
         height::Int64 = (pane_height ÷ nrows) - 2
         if has_title
@@ -139,9 +139,8 @@ function display_files(
         end
         width_str = string(width)
         height_str = string(height)
-        if smart_size && !d.dry_run
+        if d.smart_size && !d.dry_run
             if (cell_width > 0) && (cell_height > 0)
-                image_pixel_width, image_pixel_height = get_image_dimensions(file)
                 area_pixel_width = width * cell_width
                 scale = area_pixel_width / image_pixel_width
                 projected_height = ceil(Int64, (scale * image_pixel_height) / cell_height)

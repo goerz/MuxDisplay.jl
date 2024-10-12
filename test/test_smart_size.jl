@@ -3,6 +3,13 @@ using MultiplexerPaneDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
+using ImageMagick
+
+
+function get_image_dimensions(filename)
+    w, h = ImageMagick.metadata(filename)[1]
+    return (w, h)
+end
 
 
 @testset "Tmux smart-size" begin
@@ -42,14 +49,14 @@ using Plots
 
     file1 = joinpath(tmpdir, "001.png")
     @test isfile(file1)
-    w, h = MultiplexerPaneDisplay.get_image_dimensions(file1)
+    w, h = get_image_dimensions(file1)
     @test 595 < w < 605
     @test 195 < h < 205
     contains(c.output, r"imgcat.sh -W 98 -H 13 .*001.png")
 
     file2 = joinpath(tmpdir, "002.png")
     @test isfile(file2)
-    w, h = MultiplexerPaneDisplay.get_image_dimensions(file2)
+    w, h = get_image_dimensions(file2)
     @test 395 < w < 405
     @test 895 < h < 905
     contains(c.output, r"imgcat.sh -W auto -H 13 .*002.png")

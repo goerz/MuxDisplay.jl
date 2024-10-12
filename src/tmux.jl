@@ -24,8 +24,8 @@ mutable struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     sleep_secs::Float64
     cell_size::Tuple{Int64,Int64}
     cell_size_timeout::Float64
-    files::Vector{String}  # Absolute paths of generated files
-    titles::Vector{String}  # Title for each file
+    files::Vector{Tuple{String,String,Tuple{Int64,Int64}}}
+    # (absolute file name, title, (width, height))
 end
 
 
@@ -44,8 +44,7 @@ function TmuxPaneDisplay(;
     sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
     cell_size = (0, 0),
     cell_size_timeout = 0.1,
-    files = String[],  # internal
-    titles = String[],  # internal
+    files = [],  # internal
 )
     # TODO: check that target_pane is either "session:window.pane" or "pane"
     TmuxPaneDisplay(
@@ -64,7 +63,6 @@ function TmuxPaneDisplay(;
         cell_size,
         cell_size_timeout,
         files,
-        titles,
     )
 end
 

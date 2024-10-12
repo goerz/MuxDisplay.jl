@@ -18,8 +18,8 @@ mutable struct DummyDisplay <: MultiplexerPaneDisplay.AbstractMultiplexerPaneDis
     dry_run::Bool
     use_filenames_as_title::Bool
     only_write_files::Bool
-    files::Vector{String}  # Absolute paths of generated files
-    titles::Vector{String}  # Title for each file
+    files::Vector{Tuple{String,String,Tuple{Int64,Int64}}}
+    # (absolute file name, title, (width, height))
 end
 
 
@@ -29,8 +29,7 @@ function DummyDisplay(;
     tmpdir = mktempdir(),
     dry_run = false,
     only_write_files = true,
-    files = String[],
-    titles = String[],
+    files =[],
     kwargs...
 )
     DummyDisplay(
@@ -44,7 +43,6 @@ function DummyDisplay(;
         false,
         only_write_files,
         files,
-        titles
     )
 end
 
