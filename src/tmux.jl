@@ -21,6 +21,7 @@ mutable struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
     use_filenames_as_title::Bool
     clear::Bool
     smart_size::Bool
+    scale::Float64
     sleep_secs::Float64
     cell_size::Tuple{Int64,Int64}
     cell_size_timeout::Float64
@@ -37,6 +38,7 @@ function TmuxPaneDisplay(;
     nrows = 1,
     clear = needs_clear(Val(:tmux)),
     smart_size = true,
+    scale = 1.0,
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
@@ -59,6 +61,7 @@ function TmuxPaneDisplay(;
         use_filenames_as_title,
         clear,
         smart_size,
+        scale,
         sleep_secs,
         cell_size,
         cell_size_timeout,

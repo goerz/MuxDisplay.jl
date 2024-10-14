@@ -74,6 +74,7 @@ using Plots
             @error "Test failure" line
             if isdefined(Main, :Infiltrator)
                 Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+                break
             end
         end
     end
@@ -115,6 +116,81 @@ end
     tmpdir = c.value.tmpdir
     @test isfile(joinpath(tmpdir, "001.png"))
     @test isfile(joinpath(tmpdir, "002.png"))
+
+end
+
+
+function write_binary(folder, name)
+    file_path = joinpath(folder, name)
+    open(file_path, "w") do f
+        write(f, "#!/bin/bash\n")
+    end
+    chmod(file_path, 0o755)  # make the resulting file executable
+end
+
+
+@testset "Tmux Plots scaled use_pixels dry run" begin
+
+    path_dir = mktempdir()
+    write_binary(path_dir, "imgcat")
+
+    c = IOCapture.capture(passthrough = false) do
+        withenv(
+            "PATH" => path_dir,
+            "JULIA_DEBUG" => MultiplexerPaneDisplay,
+            "GKSwstype" => "100"
+        ) do
+            println("*** Activation")
+            MultiplexerPaneDisplay.enable(
+                multiplexer = :tmux,
+                target_pane = "test:0.0",
+                tmpdir = ".",
+                nrows = 1,
+                dry_run = true,
+                use_filenames_as_title = true,
+                use_pixels = true,
+                scale = 2.0,
+            )
+            println("*** Figure 1")
+            fig1 = scatter(rand(100); size = (600, 400))
+            display(fig1)
+            println("*** Figure 2")
+            fig2 = scatter(rand(100); size = (800, 600))
+            display(fig2)
+            println("*** Set options")
+            MultiplexerPaneDisplay.set_options(;
+                nrows = 2,
+                redraw_previous = 1,
+                use_filenames_as_title = false
+            )
+            println("*** Reshow Figure 2")
+            display(fig2)
+            println("** Deactivation")
+            MultiplexerPaneDisplay.disable()
+        end
+    end
+
+    expected_lines = [
+        # Activation
+        "imgcat -H {pixel_height}px -W {pixel_width}px '{file}'",
+        # Figure 1
+        "echo 001.png; imgcat -H 800px -W 1200px './001.png'",
+        # Figure 2
+        "echo 002.png; imgcat -H 1200px -W 1600px './002.png'",
+        # Reshow Figure 2
+        "\"imgcat -H 1200px -W 1600px './003.png'\"",
+    ]
+
+    for line in expected_lines
+        res = @test contains(c.output, line)
+        if res isa Test.Fail
+            @error "Test failure" line
+            if isdefined(Main, :Infiltrator)
+                Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+                break
+            end
+        end
+    end
 
 end
 

@@ -17,6 +17,10 @@ mutable struct DummyDisplay <: MultiplexerPaneDisplay.AbstractMultiplexerPaneDis
     imgcat::String
     dry_run::Bool
     use_filenames_as_title::Bool
+    smart_size::Bool
+    scale::Float64
+    sleep_secs::Float64
+    cell_size::Tuple{Int64,Int64}
     only_write_files::Bool
     files::Vector{Tuple{String,String,Tuple{Int64,Int64}}}
     # (absolute file name, title, (width, height))
@@ -29,7 +33,11 @@ function DummyDisplay(;
     tmpdir = mktempdir(),
     dry_run = false,
     only_write_files = true,
-    files =[],
+    smart_size = true,
+    scale = 1.0,
+    sleep_secs = 0.0,
+    cell_size = (0, 0),
+    files = [],
     kwargs...
 )
     DummyDisplay(
@@ -41,6 +49,10 @@ function DummyDisplay(;
         imgcat,
         dry_run,
         false,
+        smart_size,
+        scale,
+        sleep_secs,
+        cell_size,
         only_write_files,
         files,
     )

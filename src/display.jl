@@ -49,6 +49,12 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             redraw_previous = d.redraw_previous,
             imgcat = d.imgcat,
             use_filenames_as_title = d.use_filenames_as_title,
+            smart_size = d.smart_size,
+            target_pane = d.target_pane,
+            cell_size = d.cell_size,
+            sleep_secs = d.sleep_secs,
+            scale = d.scale,
+            dry_run = d.dry_run,
         )
             @debug "Base.display(::$(typeof(d)), ::$(typeof(m)), ::$(typeof(x)))"
             n = length(d.files) + 1
@@ -58,12 +64,12 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             show(buff, m, x)
             seekstart(buff)
             img = load(Stream{DataFormat{Symbol($(uppercase(fmt)))}}(buff))
-            # TODO: allow to process img (e.g., scaling)
+            image_pixel_height, image_pixel_width = size(img)
             try
-                if d.dry_run
-                    @debug "Saving $m representation of $(typeof(x)) object to $file (dry run)"
+                if dry_run
+                    @debug "Saving $m representation of $(typeof(x)) object to $file (dry run)" image_pixel_width image_pixel_height
                 else
-                    @debug "Saving $m representation of $(typeof(x)) object to $file"
+                    @debug "Saving $m representation of $(typeof(x)) object to $file" image_pixel_width image_pixel_height
                     save(file, img)
                 end
             catch exc
@@ -74,7 +80,7 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             if (title == "") && use_filenames_as_title
                 title = filename
             end
-            push!(d.files, (file, title, size(img)))
+            push!(d.files, (file, title, (image_pixel_width, image_pixel_height)))
             if d.only_write_files
                 if (title == filename) || (title == "")
                     println("[$file]")
@@ -82,7 +88,19 @@ for (mime, fmt) in zip(MIMES, FORMATS)
                     println("[$file: $title]")
                 end
             else
-                display_files(d; clear, nrows, redraw_previous, imgcat)
+                display_files(
+                    d;
+                    clear,
+                    nrows,
+                    redraw_previous,
+                    imgcat,
+                    smart_size,
+                    target_pane,
+                    cell_size,
+                    sleep_secs,
+                    scale,
+                    dry_run
+                )
             end
             return nothing
         end
@@ -113,10 +131,14 @@ function display_files(
     nrows = d.nrows,
     redraw_previous = d.redraw_previous,
     imgcat = d.imgcat,
+    smart_size = d.smart_size,
+    target_pane = d.target_pane,
+    cell_size = d.cell_size,
+    sleep_secs = d.sleep_secs,
+    scale = d.scale,
+    dry_run = d.dry_run,
 )
-    cell_height, cell_width = d.cell_size
-    dry_run = d.dry_run
-    target_pane = d.target_pane
+    cell_height, cell_width = cell_size
     current_pane = nothing
     if requires_switching(d)
         current_pane = get_current_pane(d)
@@ -139,31 +161,34 @@ function display_files(
         end
         width_str = string(width)
         height_str = string(height)
-        if d.smart_size && !d.dry_run
+        if smart_size && !dry_run
             if (cell_width > 0) && (cell_height > 0)
                 area_pixel_width = width * cell_width
-                scale = area_pixel_width / image_pixel_width
-                projected_height = ceil(Int64, (scale * image_pixel_height) / cell_height)
-                @debug "Applying smart size" area_pixel_width scale projected_height height
+                area_pixel_height = height * cell_height
+                width_scale = area_pixel_width / image_pixel_width
+                projected_height =
+                    ceil(Int64, (width_scale * image_pixel_height) / cell_height)
+                @debug "Applying smart size" area_pixel_width area_pixel_height width_scale projected_height height width
                 if projected_height > height
                     @debug "Using `width=\"auto\"` because projected_height  > height"
                     width_str = "auto"
                 end
             else
-                @debug "Skip smart_size for unknown cell size = $(d.cell_size)"
+                @debug "Skip smart_size for unknown cell size = $(cell_size)"
             end
         end
         cmd_str = replace(
             imgcat,
             "{file}" => file,
             "{width}" => width_str,
-            "{height}" => height_str
+            "{height}" => height_str,
+            "{pixel_width}" => string(Int(round(scale * image_pixel_width))),
+            "{pixel_height}" => string(Int(round(scale * image_pixel_height))),
         )
         if has_title
             cmd_str = Base.shell_escape("echo", title) * "; " * cmd_str
         end
         send_cmd(d, cmd_str)
-        sleep_secs = d.sleep_secs
         if sleep_secs > 0
             @debug "Sleep for $sleep_secs secs"
             dry_run || sleep(sleep_secs)

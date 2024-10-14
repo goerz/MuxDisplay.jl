@@ -16,13 +16,18 @@ end
 
 @testset "No imgcat" begin
     c = IOCapture.capture(passthrough = false, rethrow = Union{}) do
-        withenv("PATH" => "") do
-            imgcat = find_imgcat(:tmux, "0", 24, true, false, false)
+        withenv("PATH" => "", "JULIA_DEBUG" => MultiplexerPaneDisplay) do
+            imgcat = find_imgcat(;
+                multiplexer = :tmux,
+                nrows = 24,
+                smart_size = false,
+                use_pixels = false
+            )
         end
     end
-    @test contains(c.output, "Could not determine an `imgcat` program")
     @test c.error
     @test c.value isa ArgumentError
+    @test contains(c.output, "Could not determine an `imgcat` program")
 end
 
 
@@ -33,27 +38,34 @@ end
     write_binary(path_dir, "imgcat")
     write_binary(path_dir, "tput")
 
-    clear = true
-    redraw_previous = false
     smart_size = false
+    use_pixels = false
+    multiplexer = :tmux
 
-    nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat = find_imgcat(; multiplexer, nrows = 1, smart_size, use_pixels)
         end
     end
     imgcat = "wezterm imgcat --height {height} --width {width} '{file}'"
     @test c.value == imgcat
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
-    nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat = find_imgcat(; multiplexer, nrows = 2, smart_size, use_pixels)
         end
     end
     imgcat = "wezterm imgcat --height {height} '{file}'"
+    @test c.value == imgcat
+    @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
+
+    c = IOCapture.capture(passthrough = false) do
+        withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
+            imgcat = find_imgcat(; multiplexer, nrows = 2, smart_size, use_pixels = true)
+        end
+    end
+    imgcat = "wezterm imgcat --height {pixel_height}px --width {pixel_width}px '{file}'"
     @test c.value == imgcat
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
@@ -66,24 +78,21 @@ end
     write_binary(path_dir, "imgcat")
     write_binary(path_dir, "tput")
 
-    clear = true
-    redraw_previous = false
     smart_size = false
+    use_pixels = false
 
-    nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat = find_imgcat(; multiplexer = :tmux, nrows = 1, smart_size, use_pixels)
         end
     end
     imgcat = "imgcat -H {height} -W {width} '{file}'; tput cud {height}"
     @test c.value == imgcat
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
-    nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:tmux, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat = find_imgcat(; multiplexer = :tmux, nrows = 2, smart_size, use_pixels)
         end
     end
     imgcat = "imgcat -H {height} '{file}'; tput cud {height}"
@@ -91,23 +100,37 @@ end
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
 
-    nrows = 1
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:wezterm, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat =
+                find_imgcat(; multiplexer = :wezterm, nrows = 1, smart_size, use_pixels)
         end
     end
     imgcat = "imgcat -H {height} -W {width} '{file}'"
     @test c.value == imgcat
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
-    nrows = 2
     c = IOCapture.capture(passthrough = false) do
         withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
-            imgcat = find_imgcat(:wezterm, "0", nrows, clear, redraw_previous, smart_size)
+            imgcat =
+                find_imgcat(; multiplexer = :wezterm, nrows = 2, smart_size, use_pixels)
         end
     end
     imgcat = "imgcat -H {height} '{file}'"
+    @test c.value == imgcat
+    @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
+
+    c = IOCapture.capture(passthrough = false) do
+        withenv("PATH" => path_dir, "JULIA_DEBUG" => MultiplexerPaneDisplay) do
+            imgcat = find_imgcat(;
+                multiplexer = :wezterm,
+                nrows = 2,
+                smart_size,
+                use_pixels = true
+            )
+        end
+    end
+    imgcat = "imgcat -H {pixel_height}px -W {pixel_width}px '{file}'"
     @test c.value == imgcat
     @test contains(c.output, "Debug: Using imgcat=$(repr(imgcat))")
 
