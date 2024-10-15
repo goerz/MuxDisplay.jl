@@ -43,7 +43,7 @@ function TmuxPaneDisplay(;
     dry_run = false,
     only_write_files = false,
     use_filenames_as_title = false,
-    sleep_secs = (contains(string(target_pane), ":") ? 0.0 : 0.5),
+    sleep_secs = (contains(string(target_pane), ":") ? 0.3 : 0.5),
     cell_size = (0, 0),
     cell_size_timeout = 0.1,
     files = [],  # internal

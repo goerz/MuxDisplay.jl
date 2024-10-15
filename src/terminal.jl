@@ -24,6 +24,7 @@ function set_cell_size!(display)
         cmd = raw"IFS=';' read -rs -d t -p $'\e[16t' -a CELL_SIZE"
         send_cmd(display, cmd)
         cellsize_file = joinpath(display.tmpdir, "cellsize")
+        sleep(5 * display.cell_size_timeout)
         cmd = "echo \${CELL_SIZE[1]}x\${CELL_SIZE[2]} > $cellsize_file"
         send_cmd(display, cmd)
         h, w = display.cell_size

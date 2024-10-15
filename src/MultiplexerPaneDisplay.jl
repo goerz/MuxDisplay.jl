@@ -145,8 +145,9 @@ file in the terminal.
   that switching back to the current pane happens before the rendering is
   complete, the image will be shown in the wrong place. Also, when using
   `redraw_previous` to draw multiple images, there may need be be a delay for
-   on image to finish rendering before issuing the command to draw the next
-   image. Typical values are on the order of 0.2-0.5 seconds.
+  on image to finish rendering before issuing the command to draw the next
+  image. Typical values are on the order of 0.2-0.5 seconds, possibly longer
+  on laggy connections.
 
 * `cell_size`: A tuple of for the height and width in pixels of a single
   cell (character) in the terminal. If given as the default `(0, 0)`, this
