@@ -1,11 +1,11 @@
 # API
 
-The following functions constitute the public interface of the `MultiplexerPaneDisplay` package:
+The following functions constitute the public interface of the `MuxDisplay` package:
 
 ```@docs
-MultiplexerPaneDisplay.enable
-MultiplexerPaneDisplay.enabled
-MultiplexerPaneDisplay.set_options
-MultiplexerPaneDisplay.display
-MultiplexerPaneDisplay.disable
+MuxDisplay.enable
+MuxDisplay.enabled
+MuxDisplay.set_options
+MuxDisplay.display
+MuxDisplay.disable
 ```

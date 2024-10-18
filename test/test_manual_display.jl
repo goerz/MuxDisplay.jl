@@ -1,5 +1,5 @@
 using Test
-using MultiplexerPaneDisplay
+using MuxDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
@@ -7,9 +7,9 @@ using Plots
 @testset "display with title" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
             println("*** Enable")
-            MultiplexerPaneDisplay.enable(
+            MuxDisplay.enable(
                 multiplexer = :tmux,
                 target_pane = "test:0.0",
                 tmpdir = ".",
@@ -22,12 +22,12 @@ using Plots
             )
             println("*** Fig 1")
             fig1 = scatter(rand(100))
-            MultiplexerPaneDisplay.display(fig1; title = "first plot")
+            MuxDisplay.display(fig1; title = "first plot")
             println("*** Fig 2")
             fig2 = scatter(rand(100))
-            MultiplexerPaneDisplay.display(fig2; title = "second plot")
+            MuxDisplay.display(fig2; title = "second plot")
             println("*** Fig 1 with options")
-            MultiplexerPaneDisplay.display(
+            MuxDisplay.display(
                 fig1;
                 title = "first plot (with options)",
                 clear = true,
@@ -36,7 +36,7 @@ using Plots
                 imgcat = "imgcat -H {height} '{file}'"
             )
             println("*** Fig 2 with options")
-            MultiplexerPaneDisplay.display(
+            MuxDisplay.display(
                 fig2;
                 title = "second plot (with options)",
                 clear = false,
@@ -45,13 +45,13 @@ using Plots
                 imgcat = "imgcat -H {height} '{file}'"
             )
             println("*** Fig 1 with default title")
-            MultiplexerPaneDisplay.display(fig1)
+            MuxDisplay.display(fig1)
             println("*** Fig 2 with no title")
-            MultiplexerPaneDisplay.display(fig2, use_filenames_as_title = false)
+            MuxDisplay.display(fig2, use_filenames_as_title = false)
             println("*** Fig 2 with empty title (filename default kicks in)")
-            MultiplexerPaneDisplay.display(fig2, title = "")
+            MuxDisplay.display(fig2, title = "")
             println("*** Disable")
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
         end
     end
     expected_lines = [

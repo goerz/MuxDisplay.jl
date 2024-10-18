@@ -1,21 +1,21 @@
-module MultiplexerPaneDisplay
+module MuxDisplay
 
 include("display.jl")
-include("terminal.jl")  # TODO: should be shells.jl
+include("shells.jl")
 include("imgcat.jl")
 
 
-"""Enable display via `MultiplexerPaneDisplay`
+"""Enable display via `MuxDisplay`
 
 ```julia
-MultiplexerPaneDisplay.enable(;
+MuxDisplay.enable(;
     multiplexer = :tmux,
     target_pane,  # mandatory keyword argument
     verbose = true,
     tmpdir = mktempdir(),
     mux_bin = <"tmux" | "wezterm">
     nrows = 1,
-    clear = MultiplexerPaneDisplay.needs_clear(Val(multiplexer)),
+    clear = MuxDisplay.needs_clear(Val(multiplexer)),
     smart_size = true,
     scale = 1.0,
     use_pixels = false,
@@ -82,7 +82,7 @@ file in the terminal.
   * `{pixel_width}`: The pixel width of the temporary image file, multiplied by
     `scale`.
 
-  If given as an empty string (default), `MultiplexerPaneDisplay` will attempt
+  If given as an empty string (default), `MuxDisplay` will attempt
   to find an available executable and choose parameters based on heuristics. It
   will attempt to use either the `wezterm imgcat` command or iTerm's `imgcat`
   script. The `smart_size`, `nrows`, and `use_pixels` arguments affect the
@@ -126,20 +126,20 @@ file in the terminal.
 
 * `dry_run`: If true, to not write any files and do not display any images.
   To be used for debugging in combination with
-  `ENV["JULIA_DEBUG"] = MultiplexerPaneDisplay`
+  `ENV["JULIA_DEBUG"] = MuxDisplay`
 
 * `only_write_files`: If true, write image files to `tempdir`, but do not
-  display them in the target pane. This allows to use `MultiplexerPaneDisplay`
+  display them in the target pane. This allows to use `MuxDisplay`
   without an actual multiplexer running, under the assumption that the image
   files can be viewed independently.
 
 * `use_filenames_as_title`: If true, print the filename of the temporary file
   before rendering the image. Note that more descriptive titles can be used by
-  calling [`MultiplexerPaneDisplay.display`](@ref).
+  calling [`MuxDisplay.display`](@ref).
 
 * `sleep_secs`: The number of seconds to sleep after drawing each image. This
   defaults to a heuristic value. If `multiplexer=:tmux`, and `target_pane` is a
-  pane in the current window, `MultiplexerPaneDisplay` needs to actively switch
+  pane in the current window, `MuxDisplay` needs to actively switch
   to the target pane, issue the `imgcat` command, wait for the image to render,
   and then switch back to the current pane. If `sleep_secs` to too short so
   that switching back to the current pane happens before the rendering is
@@ -204,20 +204,20 @@ function enable(;
 end
 
 
-"""Check whether MultiplexerPaneDisplay is active.
+"""Check whether MuxDisplay is active.
 
 ```
-MultiplexerPaneDisplay.enabeld(; verbose=true)
+MuxDisplay.enabeld(; verbose=true)
 ```
 
 returns `true` if the currently active display
-(`Base.Multimedia.displays[end]`) is provided by `MultiplexerPaneDisplay`. If
+(`Base.Multimedia.displays[end]`) is provided by `MuxDisplay`. If
 `verbose=true`, also show some information about the configuration of the
 display.
 """
 function enabled(; verbose = true)
     ds = Base.Multimedia.displays
-    if length(ds) > 1 && (ds[end] isa AbstractMultiplexerPaneDisplay)
+    if length(ds) > 1 && (ds[end] isa AbstractMuxDisplay)
         display = ds[end]
         if verbose
             @info "Active $(summary(display))" display.tmpdir display.imgcat
@@ -232,11 +232,11 @@ end
 """Modify an active display.
 
 ```
-MultiplexerPaneDisplay.set_options(; verbose, kwargs...)
+MuxDisplay.set_options(; verbose, kwargs...)
 ```
 
 overrides the keyword arguments originally given in
-[`MultiplexerPaneDisplay.enable`](@ref) for the currently active display for
+[`MuxDisplay.enable`](@ref) for the currently active display for
 all future invocations of `display`.
 """
 function set_options(; verbose = true, kwargs...)
@@ -255,23 +255,23 @@ function set_options(; verbose = true, kwargs...)
         Base.Multimedia.pushdisplay(display)
     else
         if verbose
-            @error "MultiplexerPaneDisplay is not active"
+            @error "MuxDisplay is not active"
         end
     end
     return nothing
 end
 
 
-"""Disable using `MultiplexerPaneDisplay` as the current display.
+"""Disable using `MuxDisplay` as the current display.
 
 ```julia
-MultiplexerPaneDisplay.disable(; verbose = true)
+MuxDisplay.disable(; verbose = true)
 ```
 
-disables the current display if it is managed by `MultiplexerPaneDisplay`. With
+disables the current display if it is managed by `MuxDisplay`. With
 `verbose=true`, also print some information about the settings of the
 deactivated system, or a warning if the current display is not managed by
-`MultiplexerPaneDisplay`.
+`MuxDisplay`.
 """
 function disable(; verbose = true)
     if enabled(; verbose = false)
@@ -283,7 +283,7 @@ function disable(; verbose = true)
         restore_target_pane(display)
     else
         if verbose
-            @warn "MultiplexerPaneDisplay is not active"
+            @warn "MuxDisplay is not active"
         end
     end
     return nothing
@@ -294,7 +294,7 @@ end
 """Show an object with a custom title and other options.
 
 ```
-MultiplexerPaneDisplay.display(x; title="", kwargs...)
+MuxDisplay.display(x; title="", kwargs...)
 ```
 
 shows `x` (which must have a `image/png` or `image/jpeg` representation) on the

@@ -1,5 +1,5 @@
 using Test
-using MultiplexerPaneDisplay
+using MuxDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
@@ -8,8 +8,8 @@ using Plots
 @testset "WezTerm Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+            MuxDisplay.enable(
                 multiplexer = :wezterm,
                 target_pane = "1",
                 tmpdir = ".",
@@ -22,13 +22,13 @@ using Plots
             display(fig1)
             fig2 = scatter(rand(100))
             display(fig2)
-            MultiplexerPaneDisplay.set_options(;
+            MuxDisplay.set_options(;
                 nrows = 2,
                 redraw_previous = 1,
                 use_filenames_as_title = false,
             )
             display(fig2)
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
         end
     end
     expected_lines = [
@@ -75,8 +75,8 @@ end
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(;
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+            MuxDisplay.enable(;
                 multiplexer = :wezterm,
                 mux_bin = joinpath(@__DIR__, "bin", "wezterm.sh"),
                 tmpdir,
@@ -91,7 +91,7 @@ end
             fig2 = scatter(rand(100))
             display(fig2)
             d = Base.Multimedia.displays[end]
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
             return d
         end
     end
@@ -99,7 +99,7 @@ end
     # So running through without an error is a strong test.
     @test contains(c.output, "Set display cell_size = (20, 10)")
 
-    @test c.value isa MultiplexerPaneDisplay.WezTerm.WezTermPaneDisplay
+    @test c.value isa MuxDisplay.WezTerm.WezTermPaneDisplay
     tmpdir = c.value.tmpdir
     @test isfile(joinpath(tmpdir, "001.png"))
     @test isfile(joinpath(tmpdir, "002.png"))

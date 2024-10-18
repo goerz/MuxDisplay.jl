@@ -6,28 +6,28 @@ const FORMATS = ("png", "jpg")
 
 
 # All fields required, see subtyptes (but this is private API)
-abstract type AbstractMultiplexerPaneDisplay <: AbstractDisplay end
+abstract type AbstractMuxDisplay <: AbstractDisplay end
 
 
 # send a command to the target pane and press Enter
-function send_cmd(d::AbstractMultiplexerPaneDisplay, cmd)
+function send_cmd(d::AbstractMuxDisplay, cmd)
     throw(MethodError(send_cmd, (d, cmd)))
 end
 
 # get the pane dimensions
-function get_pane_dimensions(d::AbstractMultiplexerPaneDisplay, pane)
+function get_pane_dimensions(d::AbstractMuxDisplay, pane)
     throw(MethodError(get_pane_dimensions, (d, pane)))
 end
 
-requires_switching(::AbstractMultiplexerPaneDisplay) = false
+requires_switching(::AbstractMuxDisplay) = false
 
 # get get the current pane for displays that require switching)
-function get_current_pane(d::AbstractMultiplexerPaneDisplay)
+function get_current_pane(d::AbstractMuxDisplay)
     throw(MethodError(get_current_pane, (d,)))
 end
 
 # switch panes (only for displays the require switching)
-function select_pane(d::AbstractMultiplexerPaneDisplay, pane)
+function select_pane(d::AbstractMuxDisplay, pane)
     throw(MethodError(select_pane, (d, pane)))
 end
 
@@ -37,11 +37,11 @@ for (mime, fmt) in zip(MIMES, FORMATS)
     @eval begin
 
         function Base.display(
-            d::AbstractMultiplexerPaneDisplay,
+            d::AbstractMuxDisplay,
             m::MIME{Symbol($mime)},
             @nospecialize(x);
             # keyword arguments are internal / undocumented, see
-            # `MultiplexerPaneDisplay.display` function for the user-facing
+            # `MuxDisplay.display` function for the user-facing
             # function that supports these explicitly
             clear = d.clear,
             title = "",
@@ -105,16 +105,16 @@ for (mime, fmt) in zip(MIMES, FORMATS)
             return nothing
         end
 
-        Base.displayable(::AbstractMultiplexerPaneDisplay, ::MIME{Symbol($mime)}) = true
+        Base.displayable(::AbstractMuxDisplay, ::MIME{Symbol($mime)}) = true
 
     end
 end
 
 
-Base.displayable(::AbstractMultiplexerPaneDisplay, ::MIME) = false
+Base.displayable(::AbstractMuxDisplay, ::MIME) = false
 
 
-function Base.display(d::AbstractMultiplexerPaneDisplay, @nospecialize(x))
+function Base.display(d::AbstractMuxDisplay, @nospecialize(x))
     for mime in MIMES
         if showable(mime, x)
             return Base.display(d, mime, x)
@@ -126,7 +126,7 @@ end
 
 # display pending files(s)
 function display_files(
-    d::AbstractMultiplexerPaneDisplay;
+    d::AbstractMuxDisplay;
     clear = d.clear,
     nrows = d.nrows,
     redraw_previous = d.redraw_previous,

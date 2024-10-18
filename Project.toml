@@ -1,4 +1,4 @@
-name = "MultiplexerPaneDisplay"
+name = "MuxDisplay"
 uuid = "afaeafb7-3261-478a-83e7-deab50c7bbde"
 authors = ["Michael Goerz <mail@michaelgoerz.net>"]
 version = "0.1.0-dev"

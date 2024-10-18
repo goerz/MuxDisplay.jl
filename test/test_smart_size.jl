@@ -1,5 +1,5 @@
 using Test
-using MultiplexerPaneDisplay
+using MuxDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
@@ -16,8 +16,8 @@ end
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(;
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+            MuxDisplay.enable(;
                 multiplexer = :tmux,
                 mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
                 tmpdir,
@@ -33,7 +33,7 @@ end
             fig2 = scatter(rand(100); size = (400, 900))  # higher than wide
             display(fig2)
             d = Base.Multimedia.displays[end]
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
             return d
         end
     end
@@ -44,7 +44,7 @@ end
     @test contains(c.output, "pane height 30") # ... tmux.sh
     @test contains(c.output, "Using `width=\"auto\"` because projected_height  > height")
 
-    @test c.value isa MultiplexerPaneDisplay.Tmux.TmuxPaneDisplay
+    @test c.value isa MuxDisplay.Tmux.TmuxPaneDisplay
     tmpdir = c.value.tmpdir
 
     file1 = joinpath(tmpdir, "001.png")

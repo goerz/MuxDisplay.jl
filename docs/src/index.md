@@ -1,7 +1,7 @@
-# MultiplexerPaneDisplay
+# MuxDisplay
 
 ## Installation
 
 ```
-] add https://github.com/goerz/MultiplexerPaneDisplay.jl.git
+] add https://github.com/goerz/MuxDisplay.jl.git
 ```

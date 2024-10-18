@@ -26,7 +26,7 @@ This is a fundamental restriction of tmux. Use a dedicated `tmux` session in a d
 
 ## I can't keep track of which image is from which command
 
-Use `MultiplexerPaneDisplay.display` with the `title` option
+Use `MuxDisplay.display` with the `title` option
 
 ## The prompt is overwriting the image
 

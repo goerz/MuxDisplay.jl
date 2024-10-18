@@ -1,5 +1,5 @@
 using Test
-using MultiplexerPaneDisplay
+using MuxDisplay
 using IOCapture: IOCapture
 using Logging
 using Plots
@@ -7,9 +7,9 @@ using Plots
 @testset "Tmux Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
             println("*** Activation")
-            MultiplexerPaneDisplay.enable(
+            MuxDisplay.enable(
                 multiplexer = :tmux,
                 target_pane = "test:0.0",
                 tmpdir = ".",
@@ -25,7 +25,7 @@ using Plots
             fig2 = scatter(rand(100))
             display(fig2)
             println("*** Set options")
-            MultiplexerPaneDisplay.set_options(;
+            MuxDisplay.set_options(;
                 nrows = 2,
                 redraw_previous = 1,
                 use_filenames_as_title = false
@@ -33,7 +33,7 @@ using Plots
             println("*** Reshow Figure 2")
             display(fig2)
             println("** Deactivation")
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
         end
     end
     expected_lines = [
@@ -87,8 +87,8 @@ end
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(;
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+            MuxDisplay.enable(;
                 multiplexer = :tmux,
                 mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
                 tmpdir,
@@ -104,7 +104,7 @@ end
             fig2 = scatter(rand(100))
             display(fig2)
             d = Base.Multimedia.displays[end]
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
             return d
         end
     end
@@ -112,7 +112,7 @@ end
     # So running through without an error is a strong test.
     @test contains(c.output, "Set display cell_size = (20, 10)")
 
-    @test c.value isa MultiplexerPaneDisplay.Tmux.TmuxPaneDisplay
+    @test c.value isa MuxDisplay.Tmux.TmuxPaneDisplay
     tmpdir = c.value.tmpdir
     @test isfile(joinpath(tmpdir, "001.png"))
     @test isfile(joinpath(tmpdir, "002.png"))
@@ -135,13 +135,9 @@ end
     write_binary(path_dir, "imgcat")
 
     c = IOCapture.capture(passthrough = false) do
-        withenv(
-            "PATH" => path_dir,
-            "JULIA_DEBUG" => MultiplexerPaneDisplay,
-            "GKSwstype" => "100"
-        ) do
+        withenv("PATH" => path_dir, "JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
             println("*** Activation")
-            MultiplexerPaneDisplay.enable(
+            MuxDisplay.enable(
                 multiplexer = :tmux,
                 target_pane = "test:0.0",
                 tmpdir = ".",
@@ -158,7 +154,7 @@ end
             fig2 = scatter(rand(100); size = (800, 600))
             display(fig2)
             println("*** Set options")
-            MultiplexerPaneDisplay.set_options(;
+            MuxDisplay.set_options(;
                 nrows = 2,
                 redraw_previous = 1,
                 use_filenames_as_title = false
@@ -166,7 +162,7 @@ end
             println("*** Reshow Figure 2")
             display(fig2)
             println("** Deactivation")
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
         end
     end
 
@@ -201,8 +197,8 @@ end
     # Do not write a cellsize file in tmpdir. This leads to a "No such file or
     # directory" error
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MultiplexerPaneDisplay, "GKSwstype" => "100") do
-            MultiplexerPaneDisplay.enable(;
+        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+            MuxDisplay.enable(;
                 multiplexer = :tmux,
                 mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
                 tmpdir,
@@ -213,7 +209,7 @@ end
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
                          " -W {width} -H {height} '{file}'",
             )
-            MultiplexerPaneDisplay.disable()
+            MuxDisplay.disable()
         end
     end
     @test contains(c.output, "Cannot determine terminal cell size")

@@ -1,6 +1,6 @@
 module Tmux
 
-import ..AbstractMultiplexerPaneDisplay
+import ..AbstractMuxDisplay
 import ..send_cmd
 import ..get_pane_dimensions
 import ..requires_switching
@@ -9,7 +9,7 @@ import ..select_pane
 import ..needs_clear
 
 
-mutable struct TmuxPaneDisplay <: AbstractMultiplexerPaneDisplay
+mutable struct TmuxPaneDisplay <: AbstractMuxDisplay
     target_pane::String
     tmpdir::String
     imgcat::String

@@ -2,13 +2,13 @@ module WezTerm
 
 import JSON
 
-import ..AbstractMultiplexerPaneDisplay
+import ..AbstractMuxDisplay
 import ..send_cmd
 import ..get_pane_dimensions
 import ..needs_clear
 
 
-mutable struct WezTermPaneDisplay <: AbstractMultiplexerPaneDisplay
+mutable struct WezTermPaneDisplay <: AbstractMuxDisplay
     target_pane::String
     tmpdir::String
     imgcat::String
