@@ -1,0 +1,11 @@
+# Run this command to always ignore formatting commits in `git blame`
+#
+#   git config --local blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# This is also incorporated into the `Makefile`
+
+# Rename to MuxDisplay
+ddec10260eb85a3f05dd9a3a4eff255bb204a0bc
+
+# Rename to MultiplexerPaneDisplay
+d5a7046fb6f1f136b8f7787a446f107195732246
