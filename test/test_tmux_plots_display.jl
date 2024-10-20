@@ -7,7 +7,7 @@ using Plots
 @testset "Tmux Plots dry run" begin
 
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+        withenv("PATH" => "", "JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
             println("*** Activation")
             MuxDisplay.enable(
                 multiplexer = :tmux,
@@ -16,6 +16,7 @@ using Plots
                 nrows = 1,
                 dry_run = true,
                 use_filenames_as_title = true,
+                shell = "zsh",
                 imgcat = "imgcat -H {height} -W {width} '{file}'"
             )
             println("*** Figure 1")
@@ -40,7 +41,10 @@ using Plots
         # Activation
         "Activating TmuxPaneDisplay for 1 row(s) using tmux target test:0.0",
         # Initializing the pane
+        "`tmux send-keys -t test:0.0 'printenv > ./printenv' Enter`",
+        "Disabling prompt in target pane test:0.0 for shell Val{:zsh}()",
         "`tmux send-keys -t test:0.0 \"PS1=''\" Enter`",
+        "`tmux send-keys -t test:0.0 'unsetopt ZLE' Enter`",
         "`tmux send-keys -t test:0.0 'stty -echo' Enter`",
         "`tmux send-keys -t test:0.0 clear Enter`",
         raw"IFS=';' read -rs -d t -p \$'\e[16t' -a CELL_SIZE",
@@ -65,8 +69,11 @@ using Plots
         "`tmux send-keys -t test:0.0 \"imgcat -H 10 -W 78 './003.png'\" Enter`",
         # Deactivation
         "Deactivating TmuxPaneDisplay",
+        "Re-enabling prompt in target pane test:0.0 for shell Val{:zsh}()",
+        "Could not restore original prompt",
         "`tmux send-keys -t test:0.0 \"PS1='> '\" Enter`",
         "`tmux send-keys -t test:0.0 'stty echo' Enter`",
+        "`tmux send-keys -t test:0.0 'setopt ZLE' Enter`",
     ]
     for line in expected_lines
         res = @test contains(c.output, line)
@@ -86,18 +93,34 @@ end
 
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
+    write(
+        joinpath(tmpdir, "printenv"),
+        raw"""
+SHELL=/opt/homebrew/bin/bash
+COLORTERM=truecolor
+PYENV_SHELL=bash
+TERM_PROGRAM_VERSION=3.5
+PS1=user@host:>
+EDITOR=/opt/homebrew/bin/nvim
+LANG=en_US.UTF-8
+LC_CTYPE=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+TERM_PROGRAM=tmux
+"""
+    )
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+        PATH = joinpath(@__DIR__, "bin")
+        withenv("PATH" => PATH, "JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
             MuxDisplay.enable(;
                 multiplexer = :tmux,
-                mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
+                mux_bin = "tmux.sh",
                 tmpdir,
                 target_pane = "test:0.0",
                 nrows = 1,
                 smart_size = false,
                 use_filenames_as_title = true,
-                imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
-                         " -W {width} -H {height} '{file}'",
+                shell = "bash",
+                imgcat = joinpath(PATH, "imgcat.sh") * " -W {width} -H {height} '{file}'",
             )
             fig1 = scatter(rand(100))
             display(fig1)
@@ -110,7 +133,23 @@ end
     end
     # The tmux.sh dummy script checks that it receives only expected input.
     # So running through without an error is a strong test.
-    @test contains(c.output, "Set display cell_size = (20, 10)")
+    expected_lines = [
+        # Activation
+        "Set display cell_size = (20, 10)",
+        # Deactivation
+        "`tmux.sh send-keys -t test:0.0 'PS1=user@host:>' Enter`",
+    ]
+
+    for line in expected_lines
+        res = @test contains(c.output, line)
+        if res isa Test.Fail
+            @error "Test failure" line
+            if isdefined(Main, :Infiltrator)
+                Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+                break
+            end
+        end
+    end
 
     @test c.value isa MuxDisplay.Tmux.TmuxPaneDisplay
     tmpdir = c.value.tmpdir
@@ -205,7 +244,8 @@ end
                 target_pane = "test:0.0",
                 nrows = 1,
                 use_filenames_as_title = true,
-                cell_size_timeout = 0.0,
+                sleep_secs = 0.0,
+                shell = "bash",
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
                          " -W {width} -H {height} '{file}'",
             )

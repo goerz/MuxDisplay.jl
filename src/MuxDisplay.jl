@@ -18,6 +18,7 @@ MuxDisplay.enable(;
     clear = MuxDisplay.needs_clear(Val(multiplexer)),
     smart_size = true,
     scale = 1.0,
+    shell = "",
     use_pixels = false,
     redraw_previous = (clear ? (nrows - 1) : 0),
     imgcat = "",
@@ -52,7 +53,8 @@ file in the terminal.
   inside that pane.
 
 * `mux_bin`: The executable for the multiplexer, `"tmux"` if `multiplexer` is
-  `:tmux`, and `"wezterm"` if `multiplexer` is `:wezterm`. This can be set to an absolute path if the executable is not in the shell's `PATH`.
+  `:tmux`, and `"wezterm"` if `multiplexer` is `:wezterm`. This can be set to
+  an absolute path if the executable is not in the shell's `PATH`.
 
 * `verbose`: If `true`, show information about the display that is being
   activated.
@@ -107,6 +109,11 @@ file in the terminal.
   into account running on a 2x "retina resolution" display. Note that `scale`
   does not scale the underlying image and has no effect if `imgcat` does not
   use the pixel-size placeholders, cf. `use_pixels`.
+
+* `shell`: The shell running in the target pane. This determines how the pane
+  is initialized (disabling the prompt, etc.) and reset. If empty, this will
+  determined automatically by queriying the multiplexer for the process
+  running in the pane, with a fallback to `"bash"`.
 
 * `use_pixels`: If `true`, default to an `imgcat` command that uses the pixel
   dimensions of the image, i.e., the `{pixel_height}` and `{pixel_width}`
@@ -167,10 +174,10 @@ function enable(;
     tmpdir = mktempdir(),
     imgcat = "",
     cell_size = (0, 0),
-    cell_size_timeout = 0.1,  # private / undocumented
     only_write_files = false,
     use_pixels = false,
     scale = 1.0,
+    shell = "",
     verbose = true,
     _display_type = DISPLAY_TYPES[multiplexer],  # internal (for testing)
     kwargs...
@@ -187,10 +194,10 @@ function enable(;
         clear,
         smart_size,
         scale,
+        shell,
         redraw_previous,
         only_write_files,
         cell_size,
-        cell_size_timeout,
         kwargs...
     )
     if verbose
@@ -207,7 +214,7 @@ end
 """Check whether MuxDisplay is active.
 
 ```
-MuxDisplay.enabeld(; verbose=true)
+MuxDisplay.enabled(; verbose=true)
 ```
 
 returns `true` if the currently active display

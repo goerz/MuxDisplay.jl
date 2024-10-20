@@ -19,6 +19,11 @@ function get_pane_dimensions(d::AbstractMuxDisplay, pane)
     throw(MethodError(get_pane_dimensions, (d, pane)))
 end
 
+# get the shell (front-running process)
+function get_shell(d::AbstractMuxDisplay; pane = d.target_pane)
+    throw(MethodError(get_shell, (d,)))
+end
+
 requires_switching(::AbstractMuxDisplay) = false
 
 # get get the current pane for displays that require switching)

@@ -11,6 +11,9 @@ if [ "$1" == "display" ]; then
     elif [ "$3"  == "#{pane_index}" ]; then
         echo "0"
         exit 0
+    elif [ "$5"  == "#{pane_current_command}" ]; then
+        echo "0"
+        exit 0
     else
         echo "$@" >> tmux_unrecognized_args.log
         exit 1
@@ -19,9 +22,7 @@ elif [ "$1" == "select-pane" ]; then
     exit 0
 elif [ "$1" == "send-keys" ]; then
     input="$4"
-    if [ "$input" == "PS1=''" ]; then
-        exit 0
-    elif [ "$input" == "PS1='> '" ]; then
+    if [[ "$input" == "PS1="* ]]; then
         exit 0
     elif [ "$input" == "stty -echo" ]; then
         exit 0
@@ -30,6 +31,8 @@ elif [ "$1" == "send-keys" ]; then
     elif [ "$input" == "stty echo" ]; then
         exit 0
     elif [[ "$input" == *"imgcat.sh"* ]]; then
+        exit 0
+    elif [[ "$input" == *"printenv"* ]]; then
         exit 0
     elif [[ "$input" == *"read -rs -d t -p"* ]]; then
         exit 0

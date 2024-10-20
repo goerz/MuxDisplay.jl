@@ -74,8 +74,13 @@ end
 
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
+    path_dirs = Set((dirname(Sys.which("cat")), dirname(Sys.which("sed"))))
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+        withenv(
+            "PATH" => join(path_dirs, ":"),
+            "JULIA_DEBUG" => MuxDisplay,
+            "GKSwstype" => "100"
+        ) do
             MuxDisplay.enable(;
                 multiplexer = :wezterm,
                 mux_bin = joinpath(@__DIR__, "bin", "wezterm.sh"),

@@ -6,6 +6,7 @@ import ..AbstractMuxDisplay
 import ..send_cmd
 import ..get_pane_dimensions
 import ..needs_clear
+import ..get_shell
 
 
 mutable struct WezTermPaneDisplay <: AbstractMuxDisplay
@@ -21,11 +22,13 @@ mutable struct WezTermPaneDisplay <: AbstractMuxDisplay
     clear::Bool
     smart_size::Bool
     scale::Float64
+    shell::String
     sleep_secs::Float64
     cell_size::Tuple{Int64,Int64}
-    cell_size_timeout::Float64
     files::Vector{Tuple{String,String,Tuple{Int64,Int64}}}
     # (absolute file name, title, (width, height))
+    env::Dict{String,String}
+    # output of `printenv`, split into lines
 end
 
 
@@ -38,14 +41,15 @@ function WezTermPaneDisplay(;
     clear = needs_clear(Val(:wezterm)),
     smart_size = true,
     scale = 1.0,
+    shell = "bash",
     redraw_previous = (clear ? (nrows - 1) : 0),
     dry_run = false,
     only_write_files = false,
     use_filenames_as_title = false,
     sleep_secs = ((redraw_previous > 0) ? 0.3 : 0.1),
     cell_size = (0, 0),
-    cell_size_timeout = 0.1,
     files = [],  # internal
+    env = Dict{String,String}(), # internal
 )
     # TODO: check that target_pane is valid
     WezTermPaneDisplay(
@@ -61,10 +65,11 @@ function WezTermPaneDisplay(;
         clear,
         smart_size,
         scale,
+        shell,
         sleep_secs,
         cell_size,
-        cell_size_timeout,
         files,
+        env,
     )
 end
 
@@ -145,5 +150,24 @@ function get_pane_dimensions(d::WezTermPaneDisplay, pane)
     end
 end
 
+
+function get_shell(d::WezTermPaneDisplay; pane = d.target_pane)
+    wezterm = d.mux_bin
+    wezterm_info = get_wezterm_info(wezterm; d.dry_run)
+    shell = "bash"
+    if d.dry_run
+        @debug "found wezterm pane $pane shell $shell (dry run)"
+    else
+        for pane_info in wezterm_info
+            if string(pane_info["pane_id"]) == string(pane)
+                shell = pane_info["title"]
+                @debug "found wezterm pane $pane shell $(shell)"
+                return shell
+            end
+        end
+        @error "Cannot find WezTerm pane $pane."
+    end
+    return shell
+end
 
 end

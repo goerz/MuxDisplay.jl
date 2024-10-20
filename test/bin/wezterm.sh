@@ -9,6 +9,7 @@ if [ "$1" == "cli" ] && [ "$2" == "list" ] && [ "$3" == "--format" ]; then
     "window_id": 0,
     "tab_id": 0,
     "pane_id": 0,
+    "title": "bash",
     "size": {
       "rows": 24,
       "cols": 80
@@ -18,6 +19,7 @@ if [ "$1" == "cli" ] && [ "$2" == "list" ] && [ "$3" == "--format" ]; then
     "window_id": 1,
     "tab_id": 1,
     "pane_id": 1,
+    "title": "bash",
     "size": {
       "rows": 30,
       "cols": 80

@@ -34,6 +34,11 @@ using SafeTestsets
         include("test_manual_display.jl")
     end
 
+    println("\n* Cellsize")
+    @time @safetestset "test_cellsize" begin
+        include("test_cellsize.jl")
+    end
+
 end
 
 nothing  # avoid noise when doing `include("test/runtests.jl")`

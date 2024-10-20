@@ -15,8 +15,13 @@ end
 @testset "Tmux smart-size" begin
     tmpdir = mktempdir()
     write(joinpath(tmpdir, "cellsize"), "20x10")
+    path_dirs = Set((dirname(Sys.which("cat")), dirname(Sys.which("sed"))))
     c = IOCapture.capture(passthrough = false) do
-        withenv("JULIA_DEBUG" => MuxDisplay, "GKSwstype" => "100") do
+        withenv(
+            "PATH" => join(path_dirs, ":"),
+            "JULIA_DEBUG" => MuxDisplay,
+            "GKSwstype" => "100"
+        ) do
             MuxDisplay.enable(;
                 multiplexer = :tmux,
                 mux_bin = joinpath(@__DIR__, "bin", "tmux.sh"),
@@ -25,6 +30,7 @@ end
                 nrows = 2,
                 use_filenames_as_title = true,
                 smart_size = true,
+                shell = "bash",
                 imgcat = joinpath(@__DIR__, "bin", "imgcat.sh") *
                          " -W {width} -H {height} '{file}'",
             )

@@ -8,4 +8,5 @@ MuxDisplay.enabled
 MuxDisplay.set_options
 MuxDisplay.display
 MuxDisplay.disable
+MuxDisplay.install_cellsize
 ```
