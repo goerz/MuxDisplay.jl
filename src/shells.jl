@@ -66,9 +66,16 @@ function set_env!(display)
             sleep(2 * display.sleep_secs)  # wait for file to be written
             env_keys = Set(("PS1",))
             for line in readlines(printenv_file)
-                key, value = split(line, "="; limit = 2)
-                if key ∈ env_keys
-                    display.env[key] = value
+                try
+                    key, value = split(line, "="; limit = 2)
+                    if key ∈ env_keys
+                        display.env[key] = value
+                    end
+                catch
+                    # Skip over multiline values for now.
+                    # TODO: people might set PS1 to a multiline string, and
+                    # we'll have to handle that properly
+                    continue
                 end
             end
             @debug "Set `display.env` from $(repr(printenv_file))" display.env
