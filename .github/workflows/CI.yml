@@ -19,6 +19,10 @@ jobs:
   test:
     name: Test ${{ matrix.title }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions: # needed to allow julia-actions/cache to proactively delete old caches that it has created
+      actions: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -54,6 +58,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     permissions:
+      actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
       contents: write
       statuses: write
       pages: write
@@ -62,6 +67,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
+      - uses: julia-actions/cache@v1
       - name: "Instantiate build environment"
         shell: julia --color=yes --project=test {0}
         run: |
