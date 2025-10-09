@@ -57,9 +57,13 @@ The `nrows` determines the height of the output (three plots in the tall slide-o
 
 ## Installation
 
+[As usual for a registered Julia package](https://docs.julialang.org/en/v1/stdlib/Pkg/), `MuxDisplay` can be installed by typing
+
 ```
-] add https://github.com/goerz/MuxDisplay.jl.git
+] add MuxDisplay
 ```
+
+in the Julia REPL.
 
 It is recommended to install `MuxDisplay` into your main Julia environment, together with other development tools such as [Revise](https://github.com/timholy/Revise.jl), [Infiltrator](https://github.com/JuliaDebug/Infiltrator.jl), [BenchmarkTools](https://github.com/JuliaCI/BenchmarkTools.jl), etc.
 
