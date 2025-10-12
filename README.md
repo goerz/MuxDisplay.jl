@@ -1,5 +1,6 @@
 # MuxDisplay.jl
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://goerz.github.io/MuxDisplay.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://goerz.github.io/MuxDisplay.jl/dev/)
 [![Build Status](https://github.com/goerz/MuxDisplay.jl/workflows/CI/badge.svg)](https://github.com/goerz/MuxDisplay.jl/actions)
 [![Coverage](https://codecov.io/gh/goerz/MuxDisplay.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/goerz/MuxDisplay.jl)
@@ -57,9 +58,13 @@ The `nrows` determines the height of the output (three plots in the tall slide-o
 
 ## Installation
 
+[As usual for a registered Julia package](https://docs.julialang.org/en/v1/stdlib/Pkg/), `MuxDisplay` can be installed by typing
+
 ```
-] add https://github.com/goerz/MuxDisplay.jl.git
+] add MuxDisplay
 ```
+
+in the Julia REPL.
 
 It is recommended to install `MuxDisplay` into your main Julia environment, together with other development tools such as [Revise](https://github.com/timholy/Revise.jl), [Infiltrator](https://github.com/JuliaDebug/Infiltrator.jl), [BenchmarkTools](https://github.com/JuliaCI/BenchmarkTools.jl), etc.
 

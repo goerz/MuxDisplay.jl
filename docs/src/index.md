@@ -13,11 +13,13 @@ The package currently supports both [tmux](https://github.com/tmux/tmux/wiki) an
 
 ## Installation and Usage
 
-`MuxDisplay` is not yet registered in the Julia General registry. Install directly from the repository:
+`MuxDisplay` is registered in the Julia General registry and thus can be installed by running
 
-```julia
-] add https://github.com/goerz/MuxDisplay.jl.git
 ```
+] add MuxDisplay
+```
+
+in the Julia REPL.
 
 It is recommended to install `MuxDisplay` into your main Julia environment. To use, run
 
